@@ -13,7 +13,7 @@ func New(runnable Runnable, use, short, long string) *cobra.Command {
 		Use:           use,
 		Short:         short,
 		Long:          long,
-		RunE:          func(cmd *cobra.Command, args []string) error { return runnable.Run(cmd, args) },
+		RunE:          runnable.Run,
 		SilenceErrors: true,
 		SilenceUsage:  true,
 	}

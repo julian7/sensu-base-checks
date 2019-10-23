@@ -49,31 +49,37 @@ func filesystemCmd() *cobra.Command {
 	flags.Float64VarP(&config.iwarn, "iwarn", "W", 85.0, "Warn if PERCENT or more of inodes used; (0,100]")
 	flags.Float64VarP(&config.icrit, "icrit", "C", 95.0, "Critical if PERCENT or more of inodes used; (0,100]")
 	flags.Float64VarP(&config.magic, "magic", "x", 1.0, "Magic factor to adjust warn/crit thresholds; (0,1]")
-	flags.IntVarP(&config.normal, "normal", "n", 20, "Levels are not adapted for filesystems of exactly this size (GB). Levels reduced below this size, and raised for larger sizes.")
+	flags.IntVarP(&config.normal, "normal", "n", 20, "Levels are not adapted for filesystems of exactly this size (GB)."+
+		" Levels reduced below this size, and raised for larger sizes.")
 	flags.IntVarP(&config.minimum, "minimum", "l", 100, "Minimum size to adjust (ing GB)")
+
 	return cmd
 }
 
 func includes(needle string, haystack []string) bool {
-	if len(haystack) <= 0 {
+	if len(haystack) == 0 {
 		return false
 	}
+
 	for _, accepted := range haystack {
 		if accepted == needle {
 			return true
 		}
 	}
+
 	return false
 }
 
 func hasOpt(needles []string, haystackList string) bool {
-	if len(needles) <= 0 {
+	if len(needles) == 0 {
 		return false
 	}
+
 	haystack := strings.Split(haystackList, ",")
-	if len(haystack) <= 0 {
+	if len(haystack) == 0 {
 		return false
 	}
+
 	for _, hay := range haystack {
 		for _, needle := range needles {
 			if hay == needle {
@@ -81,6 +87,7 @@ func hasOpt(needles []string, haystackList string) bool {
 			}
 		}
 	}
+
 	return false
 }
 
@@ -96,6 +103,7 @@ func (conf *filesystemConfig) check() error {
 			return fmt.Errorf("cannot interpret regexp from --excpath: %w", err)
 		}
 	}
+
 	checks := []struct {
 		name   string
 		check  bool
@@ -120,6 +128,7 @@ func (conf *filesystemConfig) check() error {
 			return fmt.Errorf("--%s should be %s", check.name, check.errstr)
 		}
 	}
+
 	return nil
 }
 
@@ -128,12 +137,16 @@ func (conf *filesystemConfig) Run(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return sensulib.Unknown(err)
 	}
+
 	parts, err := disk.Partitions(false)
 	if err != nil {
 		return sensulib.Unknown(fmt.Errorf("cannot read partitions: %w", err))
 	}
+
 	errs := sensulib.NewErrors()
+
 	for _, part := range parts {
+		part := part
 		included := includes(part.Fstype, conf.inctype) ||
 			includes(part.Mountpoint, conf.incmnt)
 		excluded := includes(part.Fstype, conf.exctype) ||
@@ -145,9 +158,10 @@ func (conf *filesystemConfig) Run(cmd *cobra.Command, args []string) error {
 			errs.Add(conf.checkPartition(&part))
 		}
 	}
+
 	return errs.Return(sensulib.Ok(
 		fmt.Errorf(
-			"All filesystems are under %s storage and %s inode usage.",
+			"all filesystems are under %s storage and %s inode usage",
 			sensulib.PercentToHuman(conf.bwarn, 1),
 			sensulib.PercentToHuman(conf.iwarn, 1),
 		),
@@ -171,15 +185,20 @@ func (conf *filesystemConfig) checkPartition(part *disk.PartitionStat) *sensulib
 				part.Mountpoint,
 				sensulib.PercentToHuman(st.InodesUsedPercent, 1),
 			)
+
 			if st.InodesUsedPercent >= conf.icrit {
 				return sensulib.Crit(err)
 			}
+
 			return sensulib.Warn(err)
 		}
 	}
+
 	var bcrit, bwarn float64
+
 	normal := uint64(conf.normal) * 1024 * 1024
 	minimum := uint64(conf.minimum) * 1024 * 1024
+
 	if st.Total <= minimum {
 		bwarn = conf.bwarn
 		bcrit = conf.bcrit
@@ -187,6 +206,7 @@ func (conf *filesystemConfig) checkPartition(part *disk.PartitionStat) *sensulib
 		bwarn = adjustLevel(st.Total, normal, conf.magic, conf.bwarn)
 		bcrit = adjustLevel(st.Total, normal, conf.magic, conf.bcrit)
 	}
+
 	if st.UsedPercent >= bwarn {
 		err = fmt.Errorf(
 			"%s %s usage (%s free of %s)",
@@ -195,10 +215,13 @@ func (conf *filesystemConfig) checkPartition(part *disk.PartitionStat) *sensulib
 			sensulib.SizeToHuman(st.Free),
 			sensulib.SizeToHuman(st.Total),
 		)
+
 		if st.UsedPercent >= bcrit {
 			return sensulib.Crit(err)
 		}
+
 		return sensulib.Warn(err)
 	}
+
 	return nil
 }

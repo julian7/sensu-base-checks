@@ -25,9 +25,11 @@ func (errs *Errors) Error() string {
 			errors = append(errors, err.Error())
 		}
 	}
+
 	if len(errors) < 1 {
 		return "OK"
 	}
+
 	return strings.Join(errors, "\n")
 }
 
@@ -35,7 +37,7 @@ func (errs *Errors) Error() string {
 func (errs *Errors) Exit() {
 	maxCrit := 0
 
-	if errs == nil || len(errs.items) == 0 {
+	if errs == nil || len(*errs) == 0 {
 		Exit(0)
 		return // testing goes here
 	}
@@ -44,6 +46,7 @@ func (errs *Errors) Exit() {
 			if err.criticality > maxCrit {
 				maxCrit = err.criticality
 			}
+
 			fmt.Println(err.Error())
 		}
 	}
@@ -53,9 +56,10 @@ func (errs *Errors) Exit() {
 
 // Return provides return value for aggregates
 func (errs *Errors) Return(err error) error {
-	if errs == nil || len(*errs) <= 0 {
+	if errs == nil || len(*errs) == 0 {
 		return err
 	}
+
 	return errs
 }
 
