@@ -47,7 +47,8 @@ func (errs *Errors) Exit() {
 			fmt.Println(err.Error())
 		}
 	}
-	exit(maxCrit)
+
+	Exit(maxCrit)
 }
 
 // Return provides return value for aggregates
