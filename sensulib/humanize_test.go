@@ -30,6 +30,7 @@ func TestSizeToHuman(t *testing.T) {
 		{"max exabytes", uint64(0x8.6p60), "8.4 EiB"},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			if got := sensulib.SizeToHuman(tt.size); got != tt.want {
 				t.Errorf("SizeToHuman() = %v, want %v", got, tt.want)
@@ -39,7 +40,7 @@ func TestSizeToHuman(t *testing.T) {
 }
 
 func TestPercentToHuman(t *testing.T) {
-	tt := []struct {
+	tests := []struct {
 		name      string
 		value     float64
 		precision int
@@ -52,10 +53,11 @@ func TestPercentToHuman(t *testing.T) {
 		{"trim trailing zeroes 2", 80.1, 2, "80.1%"},
 	}
 
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := sensulib.PercentToHuman(tc.value, tc.precision); got != tc.want {
-				t.Errorf("PercentToHuman() = %v, want: %v", got, tc.want)
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			if got := sensulib.PercentToHuman(tt.value, tt.precision); got != tt.want {
+				t.Errorf("PercentToHuman() = %v, want: %v", got, tt.want)
 			}
 		})
 	}
