@@ -17,5 +17,5 @@ func HandleError(err error) {
 		return // tests reach this
 	}
 	fmt.Printf("Error: %v\n", err)
-	exit(3)
+	Exit(3)
 }

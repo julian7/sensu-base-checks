@@ -16,10 +16,13 @@ any nagios-style monitoring solutions too.`,
 		Version: version,
 	}
 	app.AddCommand(filesystemCmd())
+
 	return app
 }
 
 func main() {
+	defer sensulib.Recover()
+
 	if err := rootCmd().Execute(); err != nil {
 		sensulib.HandleError(err)
 	}

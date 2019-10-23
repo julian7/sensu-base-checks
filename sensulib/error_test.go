@@ -10,13 +10,7 @@ func TestError_Error(t *testing.T) {
 		criticality int
 		err         error
 	}
-	var exited bool
-	var got int
-	testExit := func(exitval int) {
-		exited = true
-		got = exitval
-	}
-	SetExit(testExit)
+
 	tests := []struct {
 		name   string
 		fields fields
@@ -28,7 +22,9 @@ func TestError_Error(t *testing.T) {
 		{"CRIT test", fields{2, errors.New("crit")}, "CRITICAL: crit", 2},
 		{"UNKNOWN test", fields{3, errors.New("unknown")}, "UNKNOWN: unknown", 3},
 	}
+
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			serr := &Error{
 				criticality: tt.fields.criticality,
@@ -40,13 +36,8 @@ func TestError_Error(t *testing.T) {
 				}
 			})
 			t.Run("Exit", func(t *testing.T) {
-				exited = false
+				defer CatchExit(t, "Error.Error()", tt.exits)
 				serr.Exit()
-				if exited != true {
-					t.Errorf("Errors.Error() never exited")
-				} else if got != tt.exits {
-					t.Errorf("Errors.Error() exited with = %v, want %v", got, tt.exits)
-				}
 			})
 		})
 	}

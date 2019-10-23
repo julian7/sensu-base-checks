@@ -8,13 +8,6 @@ import (
 )
 
 func TestHandleError(t *testing.T) {
-	var exited bool
-	var got int
-	testExit := func(exitval int) {
-		exited = true
-		got = exitval
-	}
-	sensulib.SetExit(testExit)
 	tests := []struct {
 		name  string
 		err   error
@@ -26,12 +19,8 @@ func TestHandleError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exited = false
+			defer sensulib.CatchExit(t, "HandleError()", tt.exits)
 			sensulib.HandleError(tt.err)
-			if exited != true {
-				t.Errorf("HandleError() never exited")
-			} else if got != tt.exits {
-				t.Errorf("HandleError() exited with = %v, want %v", got, tt.exits)
 			}
 		})
 	}

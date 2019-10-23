@@ -16,13 +16,6 @@ func TestNewErrors(t *testing.T) {
 }
 
 func TestErrors_methods(t *testing.T) {
-	var exited bool
-	var got int
-	testExit := func(exitval int) {
-		exited = true
-		got = exitval
-	}
-	sensulib.SetExit(testExit)
 	tests := []struct {
 		name   string
 		errs   *sensulib.Errors
@@ -49,15 +42,6 @@ func TestErrors_methods(t *testing.T) {
 					t.Errorf("Errors.Error() = %#v, want %v", got, tt.error)
 				}
 			})
-			t.Run("Exit", func(t *testing.T) {
-				exited = false
-				tt.errs.Exit()
-				if exited != true {
-					t.Errorf("Errors.Error() never exited")
-				} else if got != tt.exits {
-					t.Errorf("Errors.Error() exited with = %v, want %v", got, tt.exits)
-				}
-			})
 			t.Run("Return", func(t *testing.T) {
 				got := tt.errs.Return(errors.New("default error"))
 				if tt.retErr != (got == tt.errs) {
@@ -71,6 +55,14 @@ func TestErrors_methods(t *testing.T) {
 					)
 				}
 			})
+			tt.testErrorsExit(t)
 		})
 	}
+}
+
+func (tt *testErrorsExamples) testErrorsExit(t *testing.T) {
+	t.Run("Exit", func(t *testing.T) {
+		defer sensulib.CatchExit(t, "Errors.Error()", tt.exits)
+		tt.errs.Exit()
+	})
 }

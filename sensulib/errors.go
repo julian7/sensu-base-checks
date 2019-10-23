@@ -34,8 +34,9 @@ func (errs *Errors) Error() string {
 // Exit terminates run by returning error
 func (errs *Errors) Exit() {
 	maxCrit := 0
-	if errs == nil || len(*errs) == 0 {
-		exit(0)
+
+	if errs == nil || len(errs.items) == 0 {
+		Exit(0)
 		return // testing goes here
 	}
 	for _, err := range *errs {

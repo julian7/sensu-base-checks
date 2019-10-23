@@ -2,7 +2,6 @@ package sensulib
 
 import (
 	"fmt"
-	"os"
 )
 
 const (
@@ -28,7 +27,7 @@ func (serr *Error) Error() string {
 // Exit terminates run by returning the error
 func (serr *Error) Exit() {
 	fmt.Printf("%s\n", serr.Error())
-	os.Exit(serr.criticality)
+	Exit(serr.criticality)
 }
 
 // NewError creates a new Error
