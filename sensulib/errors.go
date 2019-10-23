@@ -19,7 +19,9 @@ func (errs *Errors) Error() string {
 	if errs == nil {
 		return "OK"
 	}
+
 	errors := make([]string, 0, len(*errs))
+
 	for _, err := range []*Error(*errs) {
 		if err != nil {
 			errors = append(errors, err.Error())
@@ -41,6 +43,7 @@ func (errs *Errors) Exit() {
 		Exit(0)
 		return // testing goes here
 	}
+
 	for _, err := range *errs {
 		if err != nil {
 			if err.criticality > maxCrit {
@@ -68,5 +71,6 @@ func (errs *Errors) Add(err *Error) {
 	if err == nil {
 		return
 	}
+
 	*errs = append([]*Error(*errs), err)
 }

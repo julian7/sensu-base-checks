@@ -17,9 +17,11 @@ type testErrorsExamples struct {
 
 func errorsBuilder(errs ...*sensulib.Error) *sensulib.Errors {
 	ret := &sensulib.Errors{}
+
 	for _, err := range errs {
 		ret.Add(err)
 	}
+
 	return ret
 }
 
