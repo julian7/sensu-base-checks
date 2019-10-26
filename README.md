@@ -2,7 +2,10 @@
 
 Baseline health checks for Sensu, written in go.
 
-Very early in development, only one check is finished yet: filesystem. It is modeled after sensu-plugins-disk-checks' [check-disk-usage.rb](https://github.com/sensu-plugins/sensu-plugins-disk-checks/blob/master/bin/check-disk-usage.rb) script.
+Very early in development, just a couple of checks finished:
+
+- filesystem: it is modeled after sensu-plugins-disk-checks' [check-disk-usage.rb](https://github.com/sensu-plugins/sensu-plugins-disk-checks/blob/master/bin/check-disk-usage.rb) script
+- http: modeled after sensu-plugins-http's [check-http.rb](https://github.com/sensu-plugins/sensu-plugins-http/blob/master/bin/check-http.rb) script
 
 ## Goals
 

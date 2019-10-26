@@ -15,7 +15,7 @@ func rootCmd() *cobra.Command {
 any nagios-style monitoring solutions too.`,
 		Version: version,
 	}
-	app.AddCommand(filesystemCmd())
+	app.AddCommand(filesystemCmd(), httpCmd())
 
 	return app
 }
