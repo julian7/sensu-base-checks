@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -22,24 +23,39 @@ import (
 )
 
 var (
-	hasUPX      = false
-	packageName = "sensu-base-checks"
-	entrypoint  = "./cmd/sensu-base-checks"
-	targetDir   = "target"
-	ldFlags     = `-s -w -X main.version=$VERSION`
-	urlFormat   = "https://github.com/julian7/{{.PackageName}}/releases/download/{{.Version}}/{{.ArchiveName}}"
-	targets     = map[string]*target.Target{
+	hasUPX        = false
+	buildconfName = "./buildconf.yml"
+	buildConfig   = BuildConfig{}
+	packageName   = "sensu-base-checks"
+	entrypoint    = "./cmd/sensu-base-checks"
+	targetDir     = "target"
+	ldFlags       = `-s -w -X main.version=$VERSION`
+	targets       = map[string]*target.Target{
 		"linux":   target.BuildTarget("linux", "amd64", ""),
 		"windows": target.BuildTarget("windows", "amd64", ".exe"),
 	}
-	versionTag = "SNAPSHOT"
-	assetSpec  = AssetSpec{}
+	versionTag                    = "SNAPSHOT"
+	assetSpec                     = AssetSpec{}
+	defaultExecutableNameTemplate = "{{.PackageName}}-{{.OS}}-{{.Arch}}-{{.Version}}{{.Ext}}"
+	defaultPackageNameTemplate    = "{{.PackageName}}-{{.OS}}-{{.Arch}}-{{.Version}}.tar.gz"
+	defaultReleaseURLTemplate     = "https://github.com/julian7/{{.PackageName}}/releases/download/{{.Version}}/{{.ArchiveName}}"
 )
 
-type URLSpec struct {
+type Buildconf mg.Namespace
+
+type BuildConfig struct {
+	PackageNameTemplate    string `yaml:"pkgname,omitempty"`
+	ReleaseURLTemplate     string `yaml:"releaseurl,omitempty"`
+	ExecutableNameTemplate string `yaml:"execname,omitempty"`
+}
+
+type TemplateSpec struct {
+	Arch        string
+	ArchiveName string
+	Ext         string
+	OS          string
 	PackageName string
 	Version     string
-	ArchiveName string
 }
 
 type AssetSpec struct {
@@ -65,27 +81,112 @@ type BuildSpec struct {
 	Headers map[string]string `yaml:"headers,omitempty"`
 }
 
+func init() {
+	buildConfig.ExecutableNameTemplate = defaultExecutableNameTemplate
+	buildConfig.PackageNameTemplate = defaultPackageNameTemplate
+	buildConfig.ReleaseURLTemplate = defaultReleaseURLTemplate
+}
+
+func (c Buildconf) Read() error {
+	_, err := os.Stat(buildconfName)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	contents, err := ioutil.ReadFile(buildconfName)
+	if err != nil {
+		return err
+	}
+	if err := yaml.Unmarshal(contents, &buildConfig); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c Buildconf) Show() {
+	mg.Deps(Buildconf.Read)
+	fmt.Printf(
+		"Buildconfig:\nexecname: %s\npkgname: %s\nreleaseurl: %s\n",
+		buildConfig.ExecutableNameTemplate,
+		buildConfig.PackageNameTemplate,
+		buildConfig.ReleaseURLTemplate,
+	)
+}
+
 func step(name string) {
 	fmt.Printf("-----> %s\n", name)
 }
 
-func archive(t *target.Target, execfile string) (string, error) {
-	pkgname, err := t.Output(path.Join("bin", packageName+"{{.Ext}}"))
+func (ts *TemplateSpec) Parse(name, text string) (string, error) {
+	tmpl := template.New(name)
+	_, err := tmpl.Parse(text)
+
 	if err != nil {
 		return "", err
 	}
-	archiveFileName, err := t.Output(fmt.Sprintf(
-		"%s-{{.OS}}-{{.Arch}}-%s.tar.gz",
-		packageName,
-		versionTag,
-	))
-	if err != nil {
+
+	var out bytes.Buffer
+	if err := tmpl.Execute(&out, ts); err != nil {
 		return "", err
 	}
-	archiveFile := path.Join(targetDir, archiveFileName)
+	return out.String(), nil
+
+}
+
+func (conf *BuildConfig) tmplSpec(t *target.Target) *TemplateSpec {
+	return &TemplateSpec{
+		Arch:        t.Arch,
+		Ext:         t.Ext,
+		OS:          t.OS,
+		PackageName: packageName,
+		Version:     versionTag,
+	}
+}
+
+func (conf *BuildConfig) ExecutableName(t *target.Target) (string, error) {
+	tmplSpec := conf.tmplSpec(t)
+	return tmplSpec.Parse("executable", conf.ExecutableNameTemplate)
+}
+
+func (conf *BuildConfig) InternalExecName(t *target.Target) (string, error) {
+	tmplSpec := conf.tmplSpec(t)
+	return tmplSpec.Parse("executable", "{{.PackageName}}{{.Ext}}")
+}
+
+func (conf *BuildConfig) ArchiveName(t *target.Target) (string, error) {
+	tmplSpec := conf.tmplSpec(t)
+	return tmplSpec.Parse("archive", conf.PackageNameTemplate)
+}
+
+func (conf *BuildConfig) URL(t *target.Target) (string, error) {
+	archiveName, err := conf.ArchiveName(t)
+	if err != nil {
+		return "", fmt.Errorf("cannot generate archive name for URL: %w", err)
+	}
+	tmplSpec := conf.tmplSpec(t)
+	tmplSpec.ArchiveName = archiveName
+	return tmplSpec.Parse("url", conf.ReleaseURLTemplate)
+}
+
+func archive(t *target.Target) error {
+	builtexec, err := buildConfig.ExecutableName(t)
+	if err != nil {
+		return fmt.Errorf("cannot get built executable name: %w", err)
+	}
+	intexec, err := buildConfig.InternalExecName(t)
+	if err != nil {
+		return fmt.Errorf("cannot get internal executable name: %w", err)
+	}
+	archiveFile, err := buildConfig.ArchiveName(t)
+	if err != nil {
+		return fmt.Errorf("cannot get archive file name: %w", err)
+	}
+	archiveFile = path.Join(targetDir, archiveFile)
 	archive, err := os.Create(archiveFile)
 	if err != nil {
-		return "", err
+		return fmt.Errorf("cannot create archive file: %w", err)
 	}
 	defer archive.Close()
 
@@ -108,18 +209,23 @@ func archive(t *target.Target, execfile string) (string, error) {
 	}
 	if err := writeDirToTar("bin/", 0o755, tw); err != nil {
 		sh.Rm(archiveFile)
-		return "", err
+		return err
 	}
-	if err := writeFileToTar(execfile, pkgname, 0o755, tw); err != nil {
+	if err := writeFileToTar(
+		path.Join(targetDir, builtexec),
+		path.Join("bin", intexec),
+		0o755,
+		tw,
+	); err != nil {
 		sh.Rm(archiveFile)
-		return "", err
+		return err
 	}
 	if err := tw.Close(); err != nil {
 		sh.Rm(archiveFile)
-		return "", err
+		return err
 	}
 	fmt.Printf("Archive file created: %s\n", archiveFile)
-	return archiveFile, nil
+	return nil
 }
 
 func writeDirToTar(targetName string, mode int64, tw *tar.Writer) error {
@@ -160,27 +266,21 @@ func writeFileToTar(filename, targetName string, mode int64, tw *tar.Writer) err
 	return nil
 }
 
-func summarize(t *target.Target, filename string) error {
+func summarize(t *target.Target) error {
 	if assetSpec.Spec.Builds == nil {
 		assetSpec.Spec.Builds = []BuildSpec{}
 	}
-	archiveName := path.Base(filename)
-	urlspec := URLSpec{PackageName: packageName, Version: versionTag, ArchiveName: archiveName}
-	tmpl := template.New(archiveName)
-	_, err := tmpl.Parse(urlFormat)
-
+	filename, err := buildConfig.ArchiveName(t)
 	if err != nil {
-		return fmt.Errorf("cannot parse urlFormat for building package URL: %w", err)
+		return fmt.Errorf("cannot summarize archive: %w", err)
 	}
 
-	var out bytes.Buffer
-	if err := tmpl.Execute(&out, urlspec); err != nil {
-		return fmt.Errorf("cannot compile url template for building package URL: %w", err)
+	url, err := buildConfig.URL(t)
+	if err != nil {
+		return fmt.Errorf("cannot summarize archive: %w", err)
 	}
-	url := out.String()
-
 	hash := sha512.New()
-	reader, err := os.Open(filename)
+	reader, err := os.Open(path.Join(targetDir, filename))
 	if err != nil {
 		return fmt.Errorf("cannot open file for calculating SHA512 checksum: %w", err)
 	}
@@ -202,15 +302,10 @@ func summarize(t *target.Target, filename string) error {
 
 func build(name string, t *target.Target) error {
 	step(name)
-	execname, err := t.Output(fmt.Sprintf(
-		"%s-{{.OS}}-{{.Arch}}-%s{{.Ext}}",
-		packageName,
-		versionTag,
-	))
+	execname, err := buildConfig.ExecutableName(t)
 	if err != nil {
 		return fmt.Errorf("cannot build target filename from template: %w", err)
 	}
-
 	execfile := path.Join(targetDir, execname)
 
 	err = t.Compile(versionTag, ldFlags, execfile, entrypoint)
@@ -218,16 +313,15 @@ func build(name string, t *target.Target) error {
 		return fmt.Errorf("cannot compile executable: %w", err)
 	}
 	fmt.Printf("Executable created: %s\n", execfile)
-	archiveFile, err := archive(t, execfile)
-	if err != nil {
+	if err := archive(t); err != nil {
 		return fmt.Errorf("cannot create archive for executable: %w", err)
 	}
-	return summarize(t, archiveFile)
+	return nil
 }
 
 // All builds for all possible targets
 func All() error {
-	mg.Deps(Target, Version)
+	mg.Deps(Buildconf.Read, Target, Version)
 	step("all")
 	for name, target := range targets {
 		if err := build(name, target); err != nil {
@@ -240,11 +334,17 @@ func All() error {
 
 func Assetfile() error {
 	step("assetfile")
+	mg.Deps(Buildconf.Read, Target, Version)
 	assetSpec.Type = "Asset"
 	assetSpec.APIVersion = "core/v2"
 	assetSpec.Metadata = MetadataSpec{
 		Name:      packageName,
 		Namespace: "default",
+	}
+	for _, target := range targets {
+		if err := summarize(target); err != nil {
+			return err
+		}
 	}
 	d, err := yaml.Marshal(&assetSpec)
 	if err != nil {
