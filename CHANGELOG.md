@@ -9,6 +9,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 Added:
 
-* Initial release
+* Initial release with filesystem check
 
 [Unreleased]: https://github.com/julian7/sensu-base-checks
