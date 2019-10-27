@@ -120,6 +120,9 @@ func (conf *httpConfig) Run(cmd *cobra.Command, args []string) error {
 
 	tlsconfig := &tls.Config{}
 	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
 		Timeout: conf.timeout,
 		Transport: &http.Transport{
 			TLSClientConfig: tlsconfig,
