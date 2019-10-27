@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 Fixed:
 
+* http: return with OK value if no issues happened.
 * http: http.Client follows redirects by default. Disable this behavior to be able to test redirects.
 * http: if expecting a 3xx response code, a redirect is by no means unexpected.
 
