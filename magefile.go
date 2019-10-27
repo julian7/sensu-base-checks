@@ -202,7 +202,6 @@ func Cover() error {
 func Upload() error {
 	var assets asset.AssetSpec
 	mg.Deps(Buildconf.Read, createTargetDir, version)
-	step("upload")
 
 	if len(config.UploadTarget) == 0 {
 		return errors.New("upload target is not specified")
@@ -213,6 +212,8 @@ func Upload() error {
 	if os.IsNotExist(err) {
 		mg.Deps(All)
 	}
+
+	step("upload")
 
 	contents, err := ioutil.ReadFile(assetfile)
 	if err != nil {
@@ -226,5 +227,6 @@ func Upload() error {
 		cmdArgs = append(cmdArgs, path.Join(targetDir, path.Base(asset.URL)))
 	}
 	cmdArgs = append(cmdArgs, config.UploadTarget)
+	fmt.Printf("Uploading assets version %s\n", versionTag)
 	return sh.RunV("scp", cmdArgs...)
 }
