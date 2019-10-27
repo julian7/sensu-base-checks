@@ -10,8 +10,7 @@ import (
 	"time"
 
 	"github.com/hako/durafmt"
-	"github.com/julian7/sensu-base-checks/command"
-	"github.com/julian7/sensu-base-checks/sensulib"
+	"github.com/julian7/sensulib"
 	"github.com/karrick/tparse"
 	"github.com/spf13/cobra"
 )
@@ -35,7 +34,7 @@ type httpConfig struct {
 
 func httpCmd() *cobra.Command {
 	config := &httpConfig{}
-	cmd := command.New(
+	cmd := sensulib.NewCommand(
 		config,
 		"http",
 		"HTTP check",

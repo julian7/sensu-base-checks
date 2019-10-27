@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/julian7/sensu-base-checks/sensulib"
+	"github.com/julian7/sensulib"
 	"github.com/spf13/cobra"
 )
 

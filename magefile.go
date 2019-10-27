@@ -9,16 +9,16 @@ import (
 	"os/exec"
 	"path"
 
-	"github.com/julian7/sensu-base-checks/mage/sensuasset"
-	"github.com/julian7/sensu-base-checks/mage/target"
+	"github.com/julian7/sensulib/mage/asset"
+	"github.com/julian7/sensulib/mage/target"
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
 	"gopkg.in/yaml.v2"
 )
 
 var (
-	buildConfig   *sensuasset.Config
-	assetSpec     *sensuasset.AssetSpec
+	buildConfig   *asset.Config
+	assetSpec     *asset.AssetSpec
 	hasUPX        = false
 	buildconfName = "./buildconf.yml"
 	packageName   = "sensu-base-checks"
@@ -35,7 +35,7 @@ var (
 type Buildconf mg.Namespace
 
 func init() {
-	buildConfig = sensuasset.NewConfig(
+	buildConfig = asset.NewConfig(
 		"{{.PackageName}}-{{.OS}}-{{.Arch}}-{{.Version}}.tar.gz",
 		"https://github.com/julian7/{{.PackageName}}/releases/download/{{.Version}}/{{.ArchiveName}}",
 		"{{.PackageName}}-{{.OS}}-{{.Arch}}-{{.Version}}{{.Ext}}",
@@ -81,7 +81,7 @@ func All() error {
 	mg.Deps(Buildconf.Read, createTargetDir, version)
 	step("all")
 	for name, target := range targets {
-		tar, err := sensuasset.NewTarget(buildConfig, target)
+		tar, err := asset.NewTarget(buildConfig, target)
 		if err != nil {
 			return err
 		}
@@ -107,7 +107,7 @@ func Assetfile() error {
 	mg.Deps(Buildconf.Read, createTargetDir, version)
 	assetSpec = buildConfig.NewAssetSpec()
 	for _, target := range targets {
-		t, err := sensuasset.NewTarget(buildConfig, target)
+		t, err := asset.NewTarget(buildConfig, target)
 		if err != nil {
 			return err
 		}

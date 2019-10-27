@@ -6,8 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/julian7/sensu-base-checks/command"
-	"github.com/julian7/sensu-base-checks/sensulib"
+	"github.com/julian7/sensulib"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/spf13/cobra"
 )
@@ -31,7 +30,7 @@ type filesystemConfig struct {
 
 func filesystemCmd() *cobra.Command {
 	config := &filesystemConfig{}
-	cmd := command.New(
+	cmd := sensulib.NewCommand(
 		config,
 		"filesystem",
 		"Local filesystem check",
