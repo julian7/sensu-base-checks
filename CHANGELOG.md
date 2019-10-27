@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+No changes so far.
+
+## [v0.1.1] - Oct 27, 2019
+
 Fixed:
 
 * asset files' build URLs haven't contained archive name. v0.1.2 version of julian7/sensulib fixed this issue
@@ -21,3 +25,4 @@ Added:
 
 [Unreleased]: https://github.com/julian7/sensu-base-checks
 [v0.1.0]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.1.0
+[v0.1.1]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.1.1
