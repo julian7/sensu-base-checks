@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+No changes so far.
+
+## [v0.1.0] - Oct 27, 2019
+
 Added:
 
 * Initial release
@@ -14,3 +18,4 @@ Added:
 * http check
 
 [Unreleased]: https://github.com/julian7/sensu-base-checks
+[v0.1.0]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.1.0
