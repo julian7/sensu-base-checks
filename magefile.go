@@ -3,6 +3,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -17,7 +18,7 @@ import (
 )
 
 var (
-	buildConfig   *asset.Config
+	config        *Config
 	assetSpec     *asset.AssetSpec
 	hasUPX        = false
 	buildconfName = "./buildconf.yml"
@@ -32,16 +33,23 @@ var (
 	versionTag = "SNAPSHOT"
 )
 
+type Config struct {
+	Build        *asset.Config `yaml:"build,omitempty"`
+	UploadTarget string        `yaml:"uploadtarget,omitempty"`
+}
+
 type Buildconf mg.Namespace
 
 func init() {
-	buildConfig = asset.NewConfig(
-		"{{.PackageName}}-{{.OS}}-{{.Arch}}-{{.Version}}.tar.gz",
-		"https://github.com/julian7/{{.PackageName}}/releases/download/{{.Version}}/{{.ArchiveName}}",
-		"{{.PackageName}}-{{.OS}}-{{.Arch}}-{{.Version}}{{.Ext}}",
-	)
-	buildConfig.SetBuildParams(entrypoint, ldFlags, packageName)
-	buildConfig.SetVersion(versionTag)
+	config = &Config{
+		Build: asset.NewConfig(
+			"{{.PackageName}}-{{.OS}}-{{.Arch}}-{{.Version}}.tar.gz",
+			"https://github.com/julian7/{{.PackageName}}/releases/download/{{.Version}}/{{.ArchiveName}}",
+			"{{.PackageName}}-{{.OS}}-{{.Arch}}-{{.Version}}{{.Ext}}",
+		),
+	}
+	config.Build.SetBuildParams(entrypoint, ldFlags, packageName)
+	config.Build.SetVersion(versionTag)
 }
 
 func (c Buildconf) Read() error {
@@ -56,7 +64,7 @@ func (c Buildconf) Read() error {
 	if err != nil {
 		return err
 	}
-	if err := yaml.Unmarshal(contents, &buildConfig); err != nil {
+	if err := yaml.Unmarshal(contents, &config); err != nil {
 		return err
 	}
 	return nil
@@ -65,10 +73,11 @@ func (c Buildconf) Read() error {
 func (c Buildconf) Show() {
 	mg.Deps(Buildconf.Read)
 	fmt.Printf(
-		"Buildconfig:\nexecname: %s\npkgname: %s\nreleaseurl: %s\n",
-		buildConfig.ExecTmpl,
-		buildConfig.PkgTmpl,
-		buildConfig.ReleaseURL,
+		"Buildconfig:\nexecname: %s\npkgname: %s\nreleaseurl: %s\nuploadtarget: %s\n",
+		config.Build.ExecTmpl,
+		config.Build.PkgTmpl,
+		config.Build.ReleaseURL,
+		config.UploadTarget,
 	)
 }
 
@@ -76,12 +85,16 @@ func step(name string) {
 	fmt.Printf("-----> %s\n", name)
 }
 
+func assetFile() string {
+	return path.Join(targetDir, fmt.Sprintf("%s-asset-%s.yml", packageName, versionTag))
+}
+
 // All builds for all possible targets
 func All() error {
 	mg.Deps(Buildconf.Read, createTargetDir, version)
 	step("all")
 	for name, target := range targets {
-		tar, err := asset.NewTarget(buildConfig, target)
+		tar, err := asset.NewTarget(config.Build, target)
 		if err != nil {
 			return err
 		}
@@ -105,9 +118,9 @@ func All() error {
 func Assetfile() error {
 	step("assetfile")
 	mg.Deps(Buildconf.Read, createTargetDir, version)
-	assetSpec = buildConfig.NewAssetSpec()
+	assetSpec = config.Build.NewAssetSpec()
 	for _, target := range targets {
-		t, err := asset.NewTarget(buildConfig, target)
+		t, err := asset.NewTarget(config.Build, target)
 		if err != nil {
 			return err
 		}
@@ -117,16 +130,16 @@ func Assetfile() error {
 		}
 		assetSpec.AddBuild(build)
 	}
-	assetFileName := path.Join(targetDir, fmt.Sprintf("%s-asset-%s.yml", packageName, versionTag))
-	assetFile, err := os.Create(assetFileName)
+	assetFilename := assetFile()
+	assetfile, err := os.Create(assetFilename)
 	if err != nil {
 		return fmt.Errorf("unable to open asset file to write: %w", err)
 	}
-	if _, err := assetSpec.Write(assetFile); err != nil {
+	if _, err := assetSpec.Write(assetfile); err != nil {
 		return err
 	}
-	assetFile.Close()
-	fmt.Printf("Asset file created: %s\n", assetFileName)
+	assetfile.Close()
+	fmt.Printf("Asset file created: %s\n", assetFilename)
 	return nil
 }
 
@@ -144,7 +157,7 @@ func version() error {
 	if err != nil {
 		return err
 	}
-	buildConfig.SetVersion(versionTag)
+	config.Build.SetVersion(versionTag)
 	return nil
 }
 
@@ -183,4 +196,35 @@ func Cover() error {
 		return err
 	}
 	return sh.RunV(mg.GoCmd(), "tool", "cover", "-func", "sum.cov")
+}
+
+// Upload uploads files using SCP
+func Upload() error {
+	var assets asset.AssetSpec
+	mg.Deps(Buildconf.Read, createTargetDir, version)
+	step("upload")
+
+	if len(config.UploadTarget) == 0 {
+		return errors.New("upload target is not specified")
+	}
+	assetfile := assetFile()
+
+	_, err := os.Stat(assetfile)
+	if os.IsNotExist(err) {
+		mg.Deps(All)
+	}
+
+	contents, err := ioutil.ReadFile(assetfile)
+	if err != nil {
+		return err
+	}
+	if err := yaml.Unmarshal(contents, &assets); err != nil {
+		return err
+	}
+	cmdArgs := []string{assetfile}
+	for _, asset := range assets.Spec.Builds {
+		cmdArgs = append(cmdArgs, path.Join(targetDir, path.Base(asset.URL)))
+	}
+	cmdArgs = append(cmdArgs, config.UploadTarget)
+	return sh.RunV("scp", cmdArgs...)
 }
