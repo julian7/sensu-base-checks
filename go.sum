@@ -23,6 +23,8 @@ github.com/julian7/sensulib v0.1.0 h1:y2/QmXldHSX1z+/OSlCxO4eUOT/rtiGlekarpNI83j
 github.com/julian7/sensulib v0.1.0/go.mod h1:SC5XazWJHFXiCtgOOVaC7ffwm2SF7xqTikxjK1LzvZE=
 github.com/julian7/sensulib v0.1.1 h1:h7lIBFm58lV61SHDVXMimkh9LR1CLGuOnSW4exlKMuw=
 github.com/julian7/sensulib v0.1.1/go.mod h1:SC5XazWJHFXiCtgOOVaC7ffwm2SF7xqTikxjK1LzvZE=
+github.com/julian7/sensulib v0.1.2 h1:b5Bjq/qJyXjyJ1nYQjWMuctJP8q+Cr/oqqWioj7UFVM=
+github.com/julian7/sensulib v0.1.2/go.mod h1:SC5XazWJHFXiCtgOOVaC7ffwm2SF7xqTikxjK1LzvZE=
 github.com/karrick/tparse v2.4.2+incompatible h1:+cW306qKAzrASC5XieHkgN7/vPaGKIuK62Q7nI7DIRc=
 github.com/karrick/tparse v2.4.2+incompatible/go.mod h1:ASPA+vrIcN1uEW6BZg8vfWbzm69ODPSYZPU6qJyfdK0=
 github.com/magefile/mage v1.9.0 h1:t3AU2wNwehMCW97vuqQLtw6puppWXHO+O2MHo5a50XE=

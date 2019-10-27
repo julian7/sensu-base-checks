@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No changes so far.
+Fixed:
+
+* asset files' build URLs haven't contained archive name. v0.1.2 version of julian7/sensulib fixed this issue
 
 ## [v0.1.0] - Oct 27, 2019
 

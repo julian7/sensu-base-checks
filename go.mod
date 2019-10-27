@@ -7,7 +7,7 @@ require (
 	github.com/etdub/goparsetime v0.0.0-20160315173935-ea17b0ac3318 // indirect
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/hako/durafmt v0.0.0-20191009132224-3f39dc1ed9f4
-	github.com/julian7/sensulib v0.1.1
+	github.com/julian7/sensulib v0.1.2
 	github.com/karrick/tparse v2.4.2+incompatible
 	github.com/magefile/mage v1.9.0
 	github.com/shirou/gopsutil v2.19.9+incompatible
