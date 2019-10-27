@@ -230,7 +230,9 @@ func (conf *httpConfig) Run(cmd *cobra.Command, args []string) error {
 	} else if len(conf.Redirect) != 0 {
 		return sensulib.Crit(fmt.Errorf("not redirected to %s", conf.Redirect))
 	} else if len(redirect) != 0 {
-		return sensulib.Crit(fmt.Errorf("unexpected redirection to %s", redirect))
+		if !(conf.Response == 3 || (conf.Response >= 300 && conf.Response < 400)) {
+			return sensulib.Crit(fmt.Errorf("unexpected redirection to %s", redirect))
+		}
 	}
 
 	return nil
