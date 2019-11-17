@@ -16,20 +16,21 @@ import (
 )
 
 type httpConfig struct {
-	URL       string
-	Timeout   string
-	timeout   time.Duration
-	Headers   []string
-	Insecure  bool
-	Certfile  string
-	CAfile    string
-	Expiry    string
-	expiry    time.Time
-	Method    string
-	Response  uint
-	Redirect  string
-	UserAgent string
-	Data      string
+	URL        string
+	Timeout    string
+	timeout    time.Duration
+	Headers    []string
+	Insecure   bool
+	Certfile   string
+	CAfile     string
+	Expiry     string
+	expiry     time.Time
+	Method     string
+	Response   uint
+	Redirect   string
+	UserAgent  string
+	Data       string
+	certExpiry time.Time
 }
 
 func httpCmd() *cobra.Command {
@@ -61,7 +62,8 @@ can be provided with longer range too (like d, w, mo).
 	flags.StringVarP(&config.Method, "method", "X", "GET", "HTTP method")
 	flags.StringVarP(&config.UserAgent, "user-agent", "A", "", "User agent")
 	flags.StringVarP(&config.Data, "body", "d", "", "HTTP body")
-	flags.UintVarP(&config.Response, "response", "r", 2, "HTTP error code to expect; use 3-digits for exact, 1-digit for first digit check")
+	flags.UintVarP(&config.Response, "response", "r", 2, "HTTP error code to expect; use 3-digits for exact, "+
+		"1-digit for first digit check")
 	flags.StringVarP(&config.Redirect, "redirect", "R", "", "Expect redirection to")
 
 	return cmd
@@ -118,17 +120,6 @@ func (conf *httpConfig) Run(cmd *cobra.Command, args []string) error {
 		return sensulib.Unknown(err)
 	}
 
-	tlsconfig := &tls.Config{}
-	client := &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-		Timeout: conf.timeout,
-		Transport: &http.Transport{
-			TLSClientConfig: tlsconfig,
-		},
-	}
-
 	req, err := http.NewRequest(conf.Method, conf.URL, strings.NewReader(conf.Data))
 	if err != nil {
 		return sensulib.Unknown(fmt.Errorf("cannot assemble HTTP request: %w", err))
@@ -145,36 +136,9 @@ func (conf *httpConfig) Run(cmd *cobra.Command, args []string) error {
 		req.Header.Set("User-Agent", conf.UserAgent)
 	}
 
-	if conf.Insecure {
-		tlsconfig.InsecureSkipVerify = true
-	}
-
-	var certExpiresAt time.Time
-
-	if len(conf.Expiry) != 0 {
-		tlsconfig.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
-			certExpiresAt = verifiedChains[0][0].NotAfter
-			return nil
-		}
-	}
-
-	if len(conf.Certfile) != 0 {
-		cert, err := tls.LoadX509KeyPair(conf.Certfile, conf.Certfile)
-		if err != nil {
-			return sensulib.Unknown(fmt.Errorf("cannot load --certfile: %w", err))
-		}
-
-		tlsconfig.Certificates = []tls.Certificate{cert}
-	}
-
-	if len(conf.CAfile) != 0 {
-		cacontents, err := ioutil.ReadFile(conf.CAfile)
-		if err != nil {
-			return sensulib.Unknown(fmt.Errorf("cannot load --ca: %w", err))
-		}
-
-		certpool := x509.NewCertPool()
-		certpool.AppendCertsFromPEM(cacontents)
+	client, err := conf.httpClient()
+	if err != nil {
+		return err
 	}
 
 	resp, err := client.Do(req)
@@ -184,21 +148,77 @@ func (conf *httpConfig) Run(cmd *cobra.Command, args []string) error {
 
 	defer resp.Body.Close()
 
-	// expiry
 	if len(conf.Expiry) != 0 {
-		if certExpiresAt.Before(conf.expiry) {
+		if conf.certExpiry.Before(conf.expiry) {
 			return sensulib.Warn(fmt.Errorf(
 				"certificate will expire in %s",
-				durafmt.Parse(time.Until(certExpiresAt)).LimitFirstN(4).String(),
+				durafmt.Parse(time.Until(conf.certExpiry)).LimitFirstN(4).String(),
 			))
 		}
 	}
+
+	if err := conf.checkResponse(resp); err != nil {
+		return err
+	}
+
+	if err := conf.checkRedirect(resp); err != nil {
+		return err
+	}
+
+	return sensulib.Ok(fmt.Errorf("HTTP request responded successfully with %s", resp.Status))
+}
+
+func (conf *httpConfig) httpClient() (*http.Client, error) {
+	tlsconfig := &tls.Config{}
+
+	if conf.Insecure {
+		tlsconfig.InsecureSkipVerify = true
+	}
+
+	if len(conf.Expiry) != 0 {
+		tlsconfig.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+			conf.certExpiry = verifiedChains[0][0].NotAfter
+			return nil
+		}
+	}
+
+	if len(conf.Certfile) != 0 {
+		cert, err := tls.LoadX509KeyPair(conf.Certfile, conf.Certfile)
+		if err != nil {
+			return nil, sensulib.Unknown(fmt.Errorf("cannot load --certfile: %w", err))
+		}
+
+		tlsconfig.Certificates = []tls.Certificate{cert}
+	}
+
+	if len(conf.CAfile) != 0 {
+		cacontents, err := ioutil.ReadFile(conf.CAfile)
+		if err != nil {
+			return nil, sensulib.Unknown(fmt.Errorf("cannot load --ca: %w", err))
+		}
+
+		certpool := x509.NewCertPool()
+		certpool.AppendCertsFromPEM(cacontents)
+	}
+
+	return &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+		Timeout: conf.timeout,
+		Transport: &http.Transport{
+			TLSClientConfig: tlsconfig,
+		},
+	}, nil
+}
+
+func (conf *httpConfig) checkResponse(resp *http.Response) error {
 	// response
 	sfx := ""
 	response := uint(resp.StatusCode)
 
 	if conf.Response < 10 {
-		response = response / 100
+		response /= 100
 		sfx = "xx"
 	}
 
@@ -217,9 +237,14 @@ func (conf *httpConfig) Run(cmd *cobra.Command, args []string) error {
 		return sensulib.Warn(err)
 	}
 
-	// redirect
+	return nil
+}
+
+func (conf *httpConfig) checkRedirect(resp *http.Response) error {
 	redirect := resp.Header.Get("Location")
-	if len(conf.Redirect) != 0 && len(redirect) != 0 {
+
+	switch {
+	case len(conf.Redirect) != 0 && len(redirect) != 0:
 		if redirect != conf.Redirect {
 			return sensulib.Crit(fmt.Errorf(
 				"redirected to %s, expected to %s",
@@ -227,9 +252,9 @@ func (conf *httpConfig) Run(cmd *cobra.Command, args []string) error {
 				conf.Redirect,
 			))
 		}
-	} else if len(conf.Redirect) != 0 {
+	case len(conf.Redirect) != 0:
 		return sensulib.Crit(fmt.Errorf("not redirected to %s", conf.Redirect))
-	} else if len(redirect) != 0 {
+	case len(redirect) != 0:
 		if !(conf.Response == 3 || (conf.Response >= 300 && conf.Response < 400)) {
 			return sensulib.Crit(fmt.Errorf("unexpected redirection to %s", redirect))
 		}
