@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 
 	"github.com/julian7/goshipdone"
@@ -26,6 +27,15 @@ func All() error {
 		return err
 	}
 	return nil
+}
+
+// Release builds and releases package
+func Release() {
+	mg.SerialDeps(flagrel, All)
+}
+
+func flagrel() {
+	os.Setenv("SKIP_PUBLISH", "false")
 }
 
 // Alltests runs all code checks

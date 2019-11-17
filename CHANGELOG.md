@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No changes so far.
+Added:
+
+* New mage target: release (runs goshipdone, while enabling publish modules)
+
+Fixed:
+
+* Updated to goshipdone v0.3.0
 
 ## [v0.1.2] - Nov 17, 2019
 
@@ -36,5 +42,6 @@ Added:
 * http check
 
 [Unreleased]: https://github.com/julian7/sensu-base-checks
-[v0.1.0]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.1.0
+[v0.1.2]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.1.2
 [v0.1.1]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.1.1
+[v0.1.0]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.1.0
