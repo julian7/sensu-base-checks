@@ -1,4 +1,4 @@
 /sensu-base-checks
 /sum.cov
-/target
+/dist
 /buildconf.yml

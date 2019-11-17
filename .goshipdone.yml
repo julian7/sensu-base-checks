@@ -1,0 +1,28 @@
+---
+builds:
+  - type: go
+    id: build
+    ldflags: "-s -w -X main.version={{.Version}}"
+    main: ./cmd/sensu-base-checks
+    output: "bin/sensu-base-checks{{.Ext}}"
+    goos:
+      - linux
+      - windows
+    goarch:
+      - amd64
+    before:
+      - go mod tidy
+archives:
+  - type: changelog
+    id: changelog
+  - type: upx
+    builds:
+      - build
+  - type: tar
+    builds:
+      - build
+    commondir: ""
+    compression: gzip
+  - type: sensu-asset
+    build: archive
+    asset_url: "https://github.com/julian7/testestest/releases/download/{{.Version}}/{{.ArchiveName}}"
