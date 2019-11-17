@@ -26,6 +26,7 @@ archives:
   - type: sensu-asset
     build: archive
     asset_url: "https://github.com/julian7/testestest/releases/download/{{.Version}}/{{.ArchiveName}}"
+publishes:
   - type: github
     builds:
       - archive
