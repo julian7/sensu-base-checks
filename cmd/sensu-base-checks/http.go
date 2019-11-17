@@ -235,5 +235,5 @@ func (conf *httpConfig) Run(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	return sensulib.Ok(fmt.Errorf("HTTP request responded successfully with %s", resp.Status))
+	return nil
 }
