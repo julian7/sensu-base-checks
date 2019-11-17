@@ -26,3 +26,10 @@ archives:
   - type: sensu-asset
     build: archive
     asset_url: "https://github.com/julian7/testestest/releases/download/{{.Version}}/{{.ArchiveName}}"
+  - type: github
+    builds:
+      - archive
+      - sensu-asset
+    owner: julian7
+    name: sensu-base-checks
+    release_notes: changelog
