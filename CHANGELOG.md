@@ -15,6 +15,10 @@ Added:
 
 * New mage target: release (runs goshipdone, while enabling publish modules)
 
+Changed:
+
+* filesystem: swallow permission denied errors
+
 Fixed:
 
 * Updated to goshipdone v0.3.0

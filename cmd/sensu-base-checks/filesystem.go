@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"math"
+	"os"
 	"regexp"
 	"strings"
 
@@ -174,6 +176,10 @@ func adjustLevel(total, normal uint64, magic, percent float64) float64 {
 func (conf *filesystemConfig) checkPartition(part *disk.PartitionStat) *sensulib.Error {
 	st, err := disk.Usage(part.Mountpoint)
 	if err != nil {
+		if errors.Is(err, os.ErrPermission) {
+			return nil
+		}
+
 		return sensulib.Warn(fmt.Errorf("unable to read %s: %v", part.Mountpoint, err))
 	}
 
