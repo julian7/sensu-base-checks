@@ -12,7 +12,6 @@ builds:
       - amd64
     before:
       - go mod tidy
-archives:
   - type: changelog
     id: changelog
   - type: upx

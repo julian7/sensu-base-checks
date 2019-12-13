@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No changes so far.
+Changed: 
+
+* upgrade to sensulib v0.2.1
 
 ## [v0.1.3] - Nov 17, 2019
 
