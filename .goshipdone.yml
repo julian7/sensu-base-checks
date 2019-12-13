@@ -32,7 +32,8 @@ builds:
     build: archive
     asset_url: "https://github.com/julian7/{{.ProjectName}}/releases/download/{{.Version}}/{{.ArchiveName}}"
 publishes:
-  - type: github
+  - type: artifact
+    storage: github
     builds:
       - archive
       - sha512sum

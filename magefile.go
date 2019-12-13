@@ -23,7 +23,7 @@ func step(name string) {
 func All() error {
 	step("all")
 	sensuasset.Register()
-	if err := goshipdone.Run(""); err != nil {
+	if err := goshipdone.Run(os.Getenv("GOSHIPDONE_CONF")); err != nil {
 		return err
 	}
 	return nil
@@ -36,6 +36,10 @@ func Release() {
 
 func flagrel() {
 	os.Setenv("SKIP_PUBLISH", "false")
+}
+
+func Official() {
+	os.Setenv("GOSHIPDONE_CONF", ".goshipdone.yml")
 }
 
 // Alltests runs all code checks
