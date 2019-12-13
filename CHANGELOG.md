@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-Changed: 
+Added:
+
+* .bonsai.yml for [bonsai](https://bonsai.sensu.io/) registration
+
+Changed:
 
 * upgrade to sensulib v0.2.1
 

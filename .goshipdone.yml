@@ -22,6 +22,12 @@ builds:
       - build
     commondir: ""
     compression: gzip
+  - type: checksum
+    algorithm: sha512
+    builds:
+      - archive
+    id: sha512sum
+    output: "{{.ProjectName}}-{{.Version}}-SHA512SUMS"
   - type: sensu-asset
     build: archive
     asset_url: "https://github.com/julian7/{{.ProjectName}}/releases/download/{{.Version}}/{{.ArchiveName}}"
@@ -29,6 +35,7 @@ publishes:
   - type: github
     builds:
       - archive
+      - sha512sum
       - sensu-asset
     owner: julian7
     name: sensu-base-checks
