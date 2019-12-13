@@ -14,6 +14,7 @@ Added:
 Changed:
 
 * upgrade to sensulib v0.2.1
+* filesystem: swallow permission denied errors
 
 ## [v0.1.3] - Nov 17, 2019
 
