@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/hako/durafmt"
+	"github.com/jmespath/go-jmespath"
 	"github.com/julian7/sensulib"
 	"github.com/karrick/tparse"
 	"github.com/spf13/cobra"
@@ -30,6 +32,8 @@ type httpConfig struct {
 	Redirect   string
 	UserAgent  string
 	Data       string
+	JSONkey    string
+	JSONval    string
 	certExpiry time.Time
 }
 
@@ -62,6 +66,8 @@ can be provided with longer range too (like d, w, mo).
 	flags.StringVarP(&config.Method, "method", "X", "GET", "HTTP method")
 	flags.StringVarP(&config.UserAgent, "user-agent", "A", "", "User agent")
 	flags.StringVarP(&config.Data, "body", "d", "", "HTTP body")
+	flags.StringVarP(&config.JSONkey, "json-key", "K", "", "JSON key selector in JMESPath syntax")
+	flags.StringVarP(&config.JSONval, "json-val", "V", "", "expected value for JSON key in string form")
 	flags.UintVarP(&config.Response, "response", "r", 2, "HTTP error code to expect; use 3-digits for exact, "+
 		"1-digit for first digit check")
 	flags.StringVarP(&config.Redirect, "redirect", "R", "", "Expect redirection to")
@@ -165,6 +171,19 @@ func (conf *httpConfig) Run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	if conf.JSONkey != "" {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+
+		if err := conf.checkJSONContent(body); err != nil {
+			return err
+		}
+
+		return sensulib.Ok(fmt.Errorf("HTTP request responded with JSON key %q = %q", conf.JSONkey, conf.JSONval))
+	}
+
 	return sensulib.Ok(fmt.Errorf("HTTP request responded successfully with %s", resp.Status))
 }
 
@@ -258,6 +277,26 @@ func (conf *httpConfig) checkRedirect(resp *http.Response) error {
 		if !(conf.Response == 3 || (conf.Response >= 300 && conf.Response < 400)) {
 			return sensulib.Crit(fmt.Errorf("unexpected redirection to %s", redirect))
 		}
+	}
+
+	return nil
+}
+
+func (conf *httpConfig) checkJSONContent(body []byte) error {
+	var buf interface{}
+
+	if err := json.Unmarshal(body, &buf); err != nil {
+		return fmt.Errorf("parsing response body as JSON: %w", err)
+	}
+
+	raw, err := jmespath.Search(conf.JSONkey, buf)
+	if err != nil {
+		return fmt.Errorf("searching for %q in body JSON: %w", conf.JSONkey, err)
+	}
+
+	str := fmt.Sprintf("%v", raw)
+	if str != conf.JSONval {
+		return fmt.Errorf("key %q has %q, wants %q", conf.JSONkey, str, conf.JSONval)
 	}
 
 	return nil

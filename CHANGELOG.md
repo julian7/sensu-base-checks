@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No changes so far.
+Added:
+
+* json key/val equality check, using JMESPath
 
 ## [v0.1.4] - Dec 13, 2019
 
