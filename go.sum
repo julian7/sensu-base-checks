@@ -29,10 +29,10 @@ github.com/hako/durafmt v0.0.0-20191009132224-3f39dc1ed9f4/go.mod h1:5Scbynm8dF1
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
 github.com/inconshreveable/mousetrap v1.0.0 h1:Z8tu5sraLXCXIcARxBp/8cbvlwVa7Z1NHg9XEKhtSvM=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
+github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af h1:pmfjZENx5imkbgOkpRUYLnmbU7UEFbjtDA2hxJ1ichM=
+github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=
 github.com/julian7/goshipdone v0.2.0/go.mod h1:QEYrERF9EZu2JJ33tHVwZyfiE1Q2f/zmt1MRGdoSmAs=
-github.com/julian7/goshipdone v0.3.0 h1:pvhhEc5A9joVwLg4/ZphyE9RPnsvih9IacjRb3B5bg0=
 github.com/julian7/goshipdone v0.3.0/go.mod h1:aaXTbZKzhSSWBUzPzfpIT3KYuSlILJtSg6Ar6kd10PA=
-github.com/julian7/goshipdone v0.4.0 h1:zfryI/7m78oJF/A/igD3b88HQeLhGSE+ApbVmp+pOAo=
 github.com/julian7/goshipdone v0.4.0/go.mod h1:FTsRJVPzuXmWeuXamJzPCEXjTaEAXk0Pyx1W2KuXwGk=
 github.com/julian7/goshipdone v0.4.1 h1:7PrBbhQJ2NzvWMSJE4T/h1xenbcoFCfTVu5VZEm8DTc=
 github.com/julian7/goshipdone v0.4.1/go.mod h1:FTsRJVPzuXmWeuXamJzPCEXjTaEAXk0Pyx1W2KuXwGk=
