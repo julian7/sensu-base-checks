@@ -139,7 +139,7 @@ func (conf *filesystemConfig) Run(cmd *cobra.Command, args []string) error {
 		return sensulib.Unknown(err)
 	}
 
-	parts, err := disk.Partitions(false)
+	parts, err := disk.Partitions(true)
 	if err != nil {
 		return sensulib.Unknown(fmt.Errorf("cannot read partitions: %w", err))
 	}
@@ -148,6 +148,12 @@ func (conf *filesystemConfig) Run(cmd *cobra.Command, args []string) error {
 
 	for _, part := range parts {
 		part := part
+
+		// if not an absolute device, and not an NFS mount point or windows device (containing ':')
+		if part.Device[0] != '/' && !strings.Contains(part.Device, ":") {
+			continue
+		}
+
 		included := includes(part.Fstype, conf.inctype) ||
 			includes(part.Mountpoint, conf.incmnt)
 		excluded := includes(part.Fstype, conf.exctype) ||
