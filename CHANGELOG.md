@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 Added:
 
-* json key/val equality check, using JMESPath
+* http: json key/val equality check, using JMESPath
+* metrics filesystem: collect metrics for mounted filesystems
 
 ## [v0.1.4] - Dec 13, 2019
 
