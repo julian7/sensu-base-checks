@@ -1,111 +1,206 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"regexp"
-	"strings"
+	"math"
+	"os"
 
+	"github.com/julian7/sensu-base-checks/measurements"
+	"github.com/julian7/sensu-base-checks/metrics"
 	"github.com/julian7/sensulib"
 	"github.com/shirou/gopsutil/disk"
-	"github.com/spf13/pflag"
+	"github.com/spf13/cobra"
 )
 
 type filesystemConfig struct {
-	inctype  []string
-	exctype  []string
-	incmnt   []string
-	excmnt   []string
-	excopt   []string
-	excpathS string
-	excpath  *regexp.Regexp
+	fs      *measurements.Filesystem
+	BWarn   float64
+	BCrit   float64
+	IWarn   float64
+	ICrit   float64
+	Magic   float64
+	Metrics bool
+	Minimum int
+	Normal  int
+	log     *metrics.Metrics
 }
 
-func (conf *filesystemConfig) setFlags(flags *pflag.FlagSet) {
-	flags.StringSliceVarP(&conf.inctype, "inctype", "t", nil, "Filter for filesystem types")
-	flags.StringSliceVarP(&conf.exctype, "exctype", "T", nil, "Ignore filesystem types")
-	flags.StringSliceVarP(&conf.incmnt, "incmnt", "m", nil, "Include mount points")
-	flags.StringSliceVarP(&conf.excmnt, "excmnt", "M", nil, "Ignore mount points")
-	flags.StringVarP(&conf.excpathS, "excpath", "p", "", "Ignore path regular expression")
-	flags.StringSliceVarP(&conf.excopt, "excopt", "o", nil, "Ignore options")
+func filesystemCmd() *cobra.Command {
+	config := &filesystemConfig{fs: &measurements.Filesystem{}}
+	cmd := sensulib.NewCommand(
+		config,
+		"filesystem",
+		"Local filesystem check",
+		"Checks for locally mounted filesystems.",
+	)
+	flags := cmd.Flags()
+	config.fs.SetFlags(flags)
+	flags.Float64VarP(&config.BWarn, "bwarn", "w", 85.0, "Warn if PERCENT or more of filesystem full; (0,100]")
+	flags.Float64VarP(&config.BCrit, "bcrit", "c", 95.0, "Critical if PERCENT or more of filesystem full; (0,100]")
+	flags.Float64VarP(&config.IWarn, "iwarn", "W", 85.0, "Warn if PERCENT or more of inodes used; (0,100]")
+	flags.Float64VarP(&config.ICrit, "icrit", "C", 95.0, "Critical if PERCENT or more of inodes used; (0,100]")
+	flags.Float64VarP(&config.Magic, "magic", "x", 1.0, "Magic factor to adjust warn/crit thresholds; (0,1]")
+	flags.BoolVar(&config.Metrics, "metrics", false, "Output measurements in OpenTSDB format")
+	flags.IntVarP(&config.Minimum, "minimum", "l", 100, "Minimum size to adjust (ing GB)")
+	flags.IntVarP(&config.Normal, "normal", "n", 20, "Levels are not adapted for filesystems of exactly this size (GB)."+
+		" Levels reduced below this size, and raised for larger sizes.")
+
+	return cmd
 }
 
 func (conf *filesystemConfig) check() error {
-	var err error
+	if err := conf.fs.Check(); err != nil {
+		return err
+	}
 
-	if len(conf.excpathS) > 0 {
-		conf.excpath, err = regexp.Compile(conf.excpathS)
-		if err != nil {
-			return fmt.Errorf("cannot interpret regexp from --excpath: %w", err)
+	if conf.Metrics {
+		return nil
+	}
+
+	checks := []struct {
+		name   string
+		check  bool
+		errstr string
+	}{
+		{"bwarn", conf.BWarn < 0, "higher than 0"},
+		{"bwarn", conf.BWarn > 100, "at most 100"},
+		{"bcrit", conf.BCrit < 0, "higher than 0"},
+		{"bcrit", conf.BCrit > 100, "at most 100"},
+		{"bcrit", conf.BCrit <= conf.BWarn, "should be higher than --bwarn"},
+		{"iwarn", conf.IWarn < 0, "higher than 0"},
+		{"iwarn", conf.IWarn > 100, "at most 100"},
+		{"icrit", conf.ICrit < 0, "higher than 0"},
+		{"icrit", conf.ICrit > 100, "at most 100"},
+		{"icrit", conf.ICrit <= conf.IWarn, "should be higher than --iwarn"},
+		{"magic", conf.Magic < 0, "higher than 0"},
+		{"magic", conf.Magic > 1, "at most 1"},
+	}
+
+	for _, check := range checks {
+		if check.check {
+			return fmt.Errorf("--%s should be %s", check.name, check.errstr)
 		}
 	}
 
 	return nil
 }
 
-func (conf *filesystemConfig) forEach(cb func(*disk.PartitionStat)) error {
-	parts, err := disk.Partitions(true)
+func (conf *filesystemConfig) Run(cmd *cobra.Command, args []string) error {
+	var errDefault error
+
+	err := conf.check()
 	if err != nil {
-		return sensulib.Unknown(fmt.Errorf("cannot read partitions: %w", err))
+		return sensulib.Unknown(err)
 	}
 
-	for _, part := range parts {
-		part := part
+	checkFn := conf.checkPartition
 
-		// if not an absolute device, and not an NFS mount point or windows device (containing ':')
-		if part.Device[0] != '/' && !strings.Contains(part.Device, ":") {
-			continue
+	if conf.Metrics {
+		conf.log = metrics.New("filesystem")
+		checkFn = conf.measurePartition
+	} else {
+		errDefault = sensulib.Ok(
+			fmt.Errorf(
+				"all filesystems are under %s storage and %s inode usage",
+				sensulib.PercentToHuman(conf.BWarn, 1),
+				sensulib.PercentToHuman(conf.IWarn, 1),
+			),
+		)
+	}
+
+	errs := sensulib.NewErrors()
+
+	if err := conf.fs.ForEach(func(part *disk.PartitionStat) {
+		errs.Add(checkFn(part))
+	}); err != nil {
+		return err
+	}
+
+	return errs.Return(errDefault)
+}
+
+func adjustLevel(total, normal uint64, magic, percent float64) float64 {
+	return 100 - ((100 - percent) * math.Pow(float64(total/normal), magic-1))
+}
+
+func (conf *filesystemConfig) checkPartition(part *disk.PartitionStat) *sensulib.Error {
+	st, err := disk.Usage(part.Mountpoint)
+	if err != nil {
+		if errors.Is(err, os.ErrPermission) {
+			return nil
 		}
 
-		included := includes(part.Fstype, conf.inctype) ||
-			includes(part.Mountpoint, conf.incmnt)
-		excluded := includes(part.Fstype, conf.exctype) ||
-			includes(part.Mountpoint, conf.excmnt) ||
-			hasOpt(conf.excopt, part.Opts) ||
-			matchesPath(conf.excpath, part.Mountpoint)
+		return sensulib.Warn(fmt.Errorf("unable to read %s: %v", part.Mountpoint, err))
+	}
 
-		if !excluded || included {
-			cb(&part)
+	if st.InodesTotal > 0 {
+		if st.InodesUsedPercent >= conf.IWarn {
+			err := fmt.Errorf(
+				"%s %s inode usage",
+				part.Mountpoint,
+				sensulib.PercentToHuman(st.InodesUsedPercent, 1),
+			)
+
+			if st.InodesUsedPercent >= conf.ICrit {
+				return sensulib.Crit(err)
+			}
+
+			return sensulib.Warn(err)
 		}
+	}
+
+	var bcrit, bwarn float64
+
+	normal := uint64(conf.Normal) * 1024 * 1024
+	minimum := uint64(conf.Minimum) * 1024 * 1024
+
+	if st.Total <= minimum {
+		bwarn = conf.BWarn
+		bcrit = conf.BCrit
+	} else {
+		bwarn = adjustLevel(st.Total, normal, conf.Magic, conf.BWarn)
+		bcrit = adjustLevel(st.Total, normal, conf.Magic, conf.BCrit)
+	}
+
+	if st.UsedPercent >= bwarn {
+		err = fmt.Errorf(
+			"%s %s usage (%s free of %s)",
+			part.Mountpoint,
+			sensulib.PercentToHuman(st.UsedPercent, 2),
+			sensulib.SizeToHuman(st.Free),
+			sensulib.SizeToHuman(st.Total),
+		)
+
+		if st.UsedPercent >= bcrit {
+			return sensulib.Crit(err)
+		}
+
+		return sensulib.Warn(err)
 	}
 
 	return nil
 }
 
-func includes(needle string, haystack []string) bool {
-	if len(haystack) == 0 {
-		return false
-	}
-
-	for _, accepted := range haystack {
-		if accepted == needle {
-			return true
+func (conf *filesystemConfig) measurePartition(part *disk.PartitionStat) *sensulib.Error {
+	st, err := disk.Usage(part.Mountpoint)
+	if err != nil {
+		if errors.Is(err, os.ErrPermission) {
+			return nil
 		}
+
+		return sensulib.Warn(fmt.Errorf("unable to read %s: %v", part.Mountpoint, err))
 	}
 
-	return false
-}
+	log := conf.log.With(map[string]string{"partition": part.Mountpoint})
 
-func hasOpt(needles []string, haystackList string) bool {
-	if len(needles) == 0 {
-		return false
+	log.Log("bytes.free", st.Free)
+	log.Log("bytes.total", st.Total)
+
+	if st.InodesTotal > 0 {
+		log.Log("inodes.free", st.InodesFree)
+		log.Log("inodes.total", st.InodesTotal)
 	}
 
-	haystack := strings.Split(haystackList, ",")
-	if len(haystack) == 0 {
-		return false
-	}
-
-	for _, hay := range haystack {
-		for _, needle := range needles {
-			if hay == needle {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
-func matchesPath(re *regexp.Regexp, mountpoint string) bool {
-	return re != nil && re.Match([]byte(mountpoint))
+	return nil
 }
