@@ -12,12 +12,12 @@ import (
 )
 
 type timeConfig struct {
-	server  string
-	warnS   string
+	Server  string
+	WarnS   string
 	warn    time.Duration
-	critS   string
+	CritS   string
 	crit    time.Duration
-	metrics bool
+	Metrics bool
 }
 
 func timeCmd() *cobra.Command {
@@ -29,10 +29,10 @@ func timeCmd() *cobra.Command {
 		"Measures and warns on system clock time drifts.",
 	)
 	flags := cmd.Flags()
-	flags.StringVarP(&config.server, "server", "s", "pool.ntp.org", "NTP server used for drift detection")
-	flags.StringVarP(&config.warnS, "warn", "w", "1s", "Warn on drift higher than this duration")
-	flags.StringVarP(&config.critS, "crit", "c", "5s", "Crit on drift higher than this duration")
-	flags.BoolVarP(&config.metrics, "metrics", "m", false, "Output measurements in TSDB format")
+	flags.StringVarP(&config.Server, "server", "s", "pool.ntp.org", "NTP server used for drift detection")
+	flags.StringVarP(&config.WarnS, "warn", "w", "1s", "Warn on drift higher than this duration")
+	flags.StringVarP(&config.CritS, "crit", "c", "5s", "Crit on drift higher than this duration")
+	flags.BoolVar(&config.Metrics, "metrics", false, "Output measurements in OpenTSDB format")
 
 	return cmd
 }
@@ -45,8 +45,8 @@ func (conf *timeConfig) check() error {
 		source string
 		target *time.Duration
 	}{
-		{"warn", conf.warnS, &conf.warn},
-		{"crit", conf.critS, &conf.crit},
+		{"warn", conf.WarnS, &conf.warn},
+		{"crit", conf.CritS, &conf.crit},
 	} {
 		*item.target, err = time.ParseDuration(item.source)
 		if err != nil {
@@ -77,7 +77,7 @@ func (conf *timeConfig) Run(cmd *cobra.Command, args []string) error {
 
 	wallclock := time.Now()
 
-	resp, err := ntp.Query(conf.server)
+	resp, err := ntp.Query(conf.Server)
 	if err != nil {
 		return sensulib.Warn(err)
 	}
@@ -88,7 +88,7 @@ func (conf *timeConfig) Run(cmd *cobra.Command, args []string) error {
 
 	drift := resp.Time.Sub(wallclock)
 
-	if conf.metrics {
+	if conf.Metrics {
 		conf.print(drift)
 		return nil
 	}
