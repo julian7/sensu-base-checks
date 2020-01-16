@@ -95,6 +95,26 @@ This command checks for:
 
 The JSON check uses [JMESPath](http://jmespath.org/) to identify the key, and it converts the value to string using Go's [default format (%v)](https://golang.org/pkg/fmt/).
 
+### time
+
+This command checks for system time to be in operation limits, or it provides this data as metrics.
+
+```text
+Measures and warns on system clock time drifts.
+
+Usage:
+  sensu-base-checks time [flags]
+
+Flags:
+  -c, --crit string     Crit on drift higher than this duration (default "5s")
+  -h, --help            help for time
+  -m, --metrics         Output measurements in TSDB format
+  -s, --server string   NTP server used for drift detection (default "pool.ntp.org")
+  -w, --warn string     Warn on drift higher than this duration (default "1s")
+```
+
+When `--metrics` is provided, it suppresses operational health checks (eg. warn/crit alerts), and issues a single value as `time.ntp.offset`, in microseconds.
+
 ## Metric checks
 
 The standard output of metric checks are in [OpenTSDB](http://opentsdb.net/) format.

@@ -11,6 +11,7 @@ Added:
 
 * http: json key/val equality check, using JMESPath
 * metrics filesystem: collect metrics for mounted filesystems
+* time: NTP check / metrics
 
 ## [v0.1.4] - Dec 13, 2019
 

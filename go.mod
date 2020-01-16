@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
+	github.com/beevik/ntp v0.2.0
 	github.com/etdub/goparsetime v0.0.0-20160315173935-ea17b0ac3318 // indirect
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/go-test/deep v1.0.4
