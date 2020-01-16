@@ -1,17 +1,21 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptrace"
 	"strings"
 	"time"
 
 	"github.com/hako/durafmt"
 	"github.com/jmespath/go-jmespath"
+	"github.com/julian7/sensu-base-checks/measurements"
+	"github.com/julian7/sensu-base-checks/metrics"
 	"github.com/julian7/sensulib"
 	"github.com/karrick/tparse"
 	"github.com/spf13/cobra"
@@ -28,6 +32,7 @@ type httpConfig struct {
 	Expiry     string
 	expiry     time.Time
 	Method     string
+	Metrics    bool
 	Response   uint
 	Redirect   string
 	UserAgent  string
@@ -35,6 +40,7 @@ type httpConfig struct {
 	JSONkey    string
 	JSONval    string
 	certExpiry time.Time
+	tracer     *measurements.HTTPTracer
 }
 
 func httpCmd() *cobra.Command {
@@ -64,6 +70,7 @@ can be provided with longer range too (like d, w, mo).
 	flags.StringVarP(&config.CAfile, "ca", "C", "", "CA Certificate file")
 	flags.StringVarP(&config.Expiry, "expiry", "e", "", "Warn EXPIRY before cert expires (duration, like 5d)")
 	flags.StringVarP(&config.Method, "method", "X", "GET", "HTTP method")
+	flags.BoolVar(&config.Metrics, "metrics", false, "Output measurements in OpenTSDB format")
 	flags.StringVarP(&config.UserAgent, "user-agent", "A", "", "User agent")
 	flags.StringVarP(&config.Data, "body", "d", "", "HTTP body")
 	flags.StringVarP(&config.JSONkey, "json-key", "K", "", "JSON key selector in JMESPath syntax")
@@ -147,12 +154,24 @@ func (conf *httpConfig) Run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	if conf.Metrics {
+		conf.tracer = measurements.NewHTTPTracer()
+		req = req.WithContext(httptrace.WithClientTrace(context.Background(), conf.tracer.Trace))
+	}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return sensulib.Crit(err)
 	}
 
 	defer resp.Body.Close()
+
+	if conf.Metrics {
+		conf.tracer.Done()
+		conf.printMetrics(req, resp)
+
+		return nil
+	}
 
 	if len(conf.Expiry) != 0 {
 		if conf.certExpiry.Before(conf.expiry) {
@@ -300,4 +319,19 @@ func (conf *httpConfig) checkJSONContent(body []byte) error {
 	}
 
 	return nil
+}
+
+func (conf *httpConfig) printMetrics(req *http.Request, resp *http.Response) {
+	log := metrics.New("http").With(map[string]string{"url": conf.URL})
+
+	log.Log("time.total", conf.tracer.Total().Microseconds())
+	log.Log("time.namelookup", conf.tracer.Namelookup().Microseconds())
+	log.Log("time.connect", conf.tracer.Connect().Microseconds())
+
+	if req.URL.Scheme == "https" {
+		log.Log("time.pretransfer", conf.tracer.Pretransfer().Microseconds())
+	}
+
+	log.Log("time.starttransfer", conf.tracer.Starttransfer().Microseconds())
+	log.Log("http.http_code", resp.StatusCode)
 }
