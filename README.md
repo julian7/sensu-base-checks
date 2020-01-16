@@ -2,13 +2,15 @@
 
 Baseline health and metric checks for Sensu, written in go.
 
-## Health checks
+## Subcommands
+
+Almost all subcommands support the `--metrics` option (there is no short form to it), which suppresses health checks, and emits measurements in [OpenTSDB](http://opentsdb.net/) format.
 
 ### filesystem
 
 This check is modeled after sensu-plugins-disk-checks' [check-disk-usage.rb](https://github.com/sensu-plugins/sensu-plugins-disk-checks/blob/master/bin/check-disk-usage.rb) script.
 
-```
+```text
 Usage:
   sensu-base-checks filesystem [flags]
 
@@ -25,9 +27,10 @@ Flags:
   -t, --inctype strings   Filter for filesystem types
   -W, --iwarn float       Warn if PERCENT or more of inodes used; (0,100] (default 85)
   -x, --magic float       Magic factor to adjust warn/crit thresholds; (0,1] (default 1)
+      --metrics           Output measurements in OpenTSDB format
   -l, --minimum int       Minimum size to adjust (ing GB) (default 100)
   -n, --normal int        Levels are not adapted for filesystems of exactly this size (GB). Levels reduced below this size, and raised for larger sizes. (default 20)
-```
+  ```
 
 It filters filesystems, in a way that it enumerates all not explicitly excluded or explicitly included ones. In practice, it means all inclusion options are affecting as a veto for exclusion options.
 
@@ -50,6 +53,17 @@ FS size | magic | distorted percentage
 
 The command aggregates all the errors, showing all warning / critical level alerts, and it returns with the highest criticality issue it encountered.
 
+When `--metrics` is provided, it returns
+
+- filesystem.bytes.free: free bytes
+- filesystem.bytes.total: total bytes
+- inodes.free: free inodes (unix only)
+- inodes.total: total inodes (unix only)
+
+Tags:
+
+- partition: mount point
+
 ### http
 
 This command has been modeled after sensu-plugins-http's [check-http.rb](https://github.com/sensu-plugins/sensu-plugins-http/blob/master/bin/check-http.rb) and [check-http-json.rb](https://github.com/sensu-plugins/sensu-plugins-http/blob/master/bin/check-http-json.rb) scripts.
@@ -63,7 +77,7 @@ This check runs a HTTP query, and inspects return values. Returns
 Timeout duration can be provided in short range (eg. ms, s, m, h), cert expiry
 can be provided with longer range too (like d, w, mo).
 
-```
+```text
 Usage:
   sensu-base-checks http [flags]
 
@@ -78,6 +92,7 @@ Flags:
   -K, --json-key string     JSON key selector in JMESPath syntax
   -V, --json-val string     expected value for JSON key in string form
   -X, --method string       HTTP method (default "GET")
+      --metrics             Output measurements in OpenTSDB format
   -R, --redirect string     Expect redirection to
   -r, --response uint       HTTP error code to expect; use 3-digits for exact, 1-digit for first digit check (default 2)
   -t, --timeout string      Connection timeout (default "5s")
@@ -95,6 +110,19 @@ This command checks for:
 
 The JSON check uses [JMESPath](http://jmespath.org/) to identify the key, and it converts the value to string using Go's [default format (%v)](https://golang.org/pkg/fmt/).
 
+When `--metrics` is provided, it shows the following measurements:
+
+- http.time.total: total retrieval time (in microseconds)
+- http.time.namelookup: DNS resolve time (in microseconds)
+- http.time.connect: time to connect (from start; in microseconds)
+- http.time.pretransfer: time to TLS handshake (from start; in microseconds)
+- http.time.starttransfer: time to first byte arrived (from start; in microseconds)
+- http.http.http_code: returned status code
+
+Provided tags:
+
+- url: remote URL
+
 ### time
 
 This command checks for system time to be in operation limits, or it provides this data as metrics.
@@ -108,38 +136,12 @@ Usage:
 Flags:
   -c, --crit string     Crit on drift higher than this duration (default "5s")
   -h, --help            help for time
-  -m, --metrics         Output measurements in TSDB format
+      --metrics         Output measurements in TSDB format
   -s, --server string   NTP server used for drift detection (default "pool.ntp.org")
   -w, --warn string     Warn on drift higher than this duration (default "1s")
 ```
 
-When `--metrics` is provided, it suppresses operational health checks (eg. warn/crit alerts), and issues a single value as `time.ntp.offset`, in microseconds.
-
-## Metric checks
-
-The standard output of metric checks are in [OpenTSDB](http://opentsdb.net/) format.
-
-### filesystem metrics
-
-Shows free/size measurements for locally mounted filesystems.
-
-```
-Usage:
-  sensu-base-checks metrics filesystem [flags]
-
-Flags:
-  -M, --excmnt strings    Ignore mount points
-  -o, --excopt strings    Ignore options
-  -p, --excpath string    Ignore path regular expression
-  -T, --exctype strings   Ignore filesystem types
-  -h, --help              help for filesystem
-  -m, --incmnt strings    Include mount points
-  -t, --inctype strings   Filter for filesystem types
-```
-
-This subcommand's selection options are working like `filesystem` health check command's filters.
-
-It returns free / size metrics for storage spaces and inodes (unix only) on all selected filesystems.
+When `--metrics` is provided, it returns a single value as `time.ntp.offset`, in microseconds.
 
 ## Goals
 
