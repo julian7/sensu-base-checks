@@ -196,11 +196,7 @@ func (conf *httpConfig) Run(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		if err := conf.checkJSONContent(body); err != nil {
-			return err
-		}
-
-		return sensulib.Ok(fmt.Errorf("HTTP request responded with JSON key %q = %q", conf.JSONkey, conf.JSONval))
+		return conf.checkJSONContent(body)
 	}
 
 	return sensulib.Ok(fmt.Errorf("HTTP request responded successfully with %s", resp.Status))
@@ -302,23 +298,38 @@ func (conf *httpConfig) checkRedirect(resp *http.Response) error {
 }
 
 func (conf *httpConfig) checkJSONContent(body []byte) error {
+	raw, err := conf.checkJSONKey(body)
+	if err != nil {
+		return sensulib.Crit(err)
+	}
+
+	if conf.JSONval != "" {
+		str := fmt.Sprintf("%v", raw)
+		if str != conf.JSONval {
+			return sensulib.Crit(fmt.Errorf("key %q has %q, wants %q", conf.JSONkey, str, conf.JSONval))
+		}
+
+		err = fmt.Errorf("HTTP request responded with JSON key %q = %q", conf.JSONkey, conf.JSONval)
+	} else {
+		err = fmt.Errorf("HTTP request responded with existing JSON key %q", conf.JSONkey)
+	}
+
+	return sensulib.Ok(err)
+}
+
+func (conf *httpConfig) checkJSONKey(body []byte) (interface{}, error) {
 	var buf interface{}
 
 	if err := json.Unmarshal(body, &buf); err != nil {
-		return fmt.Errorf("parsing response body as JSON: %w", err)
+		return nil, fmt.Errorf("parsing response body as JSON: %w", err)
 	}
 
 	raw, err := jmespath.Search(conf.JSONkey, buf)
 	if err != nil {
-		return fmt.Errorf("searching for %q in body JSON: %w", conf.JSONkey, err)
+		return nil, fmt.Errorf("searching for %q in body JSON: %w", conf.JSONkey, err)
 	}
 
-	str := fmt.Sprintf("%v", raw)
-	if str != conf.JSONval {
-		return fmt.Errorf("key %q has %q, wants %q", conf.JSONkey, str, conf.JSONval)
-	}
-
-	return nil
+	return raw, nil
 }
 
 func (conf *httpConfig) printMetrics(req *http.Request, resp *http.Response) {
