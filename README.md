@@ -36,7 +36,7 @@ It filters filesystems, in a way that it enumerates all not explicitly excluded 
 
 This command goes through all the selected filesystems, and enumerates free space / inode size (unix only) on them, comparing to a common percentage (free/size). For large filesystems, percentage calculation can be distorted by `magic`, `minimum`, and `normal` options using the following expression, when the filesystem size is larger than `minimum` filesystem size:
 
-```
+```text
 100 - (100 - percent) * (size/normal)^(magic-1)
 ```
 
@@ -62,7 +62,13 @@ When `--metrics` is provided, it returns
 
 Tags:
 
+- dev: source device
+- fstype: filesystem type
 - partition: mount point
+
+Known issues:
+
+- root ZFS volume is filtered, as they don't have "/" in their device names. They can be included manually though.
 
 ### http
 
