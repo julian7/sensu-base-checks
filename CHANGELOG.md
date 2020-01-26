@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 Fixed:
 
+* time: use SNTP's clock offset instead of computing from wallclock
 * time: opentsdb requires at least one tag
 
 ## [v0.2.0] - Jan 19, 2020

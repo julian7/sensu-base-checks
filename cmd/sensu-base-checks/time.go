@@ -75,8 +75,6 @@ func (conf *timeConfig) Run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	wallclock := time.Now()
-
 	resp, err := ntp.Query(conf.Server)
 	if err != nil {
 		return sensulib.Warn(err)
@@ -86,7 +84,7 @@ func (conf *timeConfig) Run(cmd *cobra.Command, args []string) error {
 		return sensulib.Warn(err)
 	}
 
-	drift := resp.Time.Sub(wallclock)
+	drift := resp.ClockOffset
 
 	if conf.Metrics {
 		conf.print(drift)
