@@ -192,7 +192,11 @@ func (conf *filesystemConfig) measurePartition(part *disk.PartitionStat) *sensul
 		return sensulib.Warn(fmt.Errorf("unable to read %s: %v", part.Mountpoint, err))
 	}
 
-	log := conf.log.With(map[string]string{"partition": part.Mountpoint})
+	log := conf.log.With(map[string]string{
+		"dev":       part.Device,
+		"fstype":    part.Fstype,
+		"partition": part.Mountpoint,
+	})
 
 	log.Log("bytes.free", st.Free)
 	log.Log("bytes.total", st.Total)
