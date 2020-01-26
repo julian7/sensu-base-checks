@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+No changes so far.
+
+## [v0.2.1] - Jan 26, 2020
+
 Changed:
 
 * filesystem: filtering out synthetic filesystems are implemented as an exclude check,
@@ -83,6 +87,7 @@ Added:
 * http check
 
 [Unreleased]: https://github.com/julian7/sensu-base-checks
+[v0.2.1]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.2.1
 [v0.2.0]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.2.0
 [v0.1.4]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.1.4
 [v0.1.3]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.1.3
