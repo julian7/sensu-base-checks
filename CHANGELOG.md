@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+Changed:
+
+* filesystem: filtering out synthetic filesystems are implemented as an exclude check,
+  and now it allows "/" anywhere in the device name (making ZFS subvolumes visible; only
+  main volumes have to be included manually)
+
 Fixed:
 
 * time: use SNTP's clock offset instead of computing from wallclock

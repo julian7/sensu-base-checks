@@ -51,17 +51,13 @@ func (conf *Filesystem) ForEach(cb func(*disk.PartitionStat)) error {
 	for _, part := range parts {
 		part := part
 
-		// if not an absolute device, and not an NFS mount point or windows device (containing ':')
-		if part.Device[0] != '/' && !strings.Contains(part.Device, ":") {
-			continue
-		}
-
 		included := includes(part.Fstype, conf.inctype) ||
 			includes(part.Mountpoint, conf.incmnt)
 		excluded := includes(part.Fstype, conf.exctype) ||
 			includes(part.Mountpoint, conf.excmnt) ||
 			hasOpt(conf.excopt, part.Opts) ||
-			matchesPath(conf.excpath, part.Mountpoint)
+			matchesPath(conf.excpath, part.Mountpoint) ||
+			!directDevice(part.Device)
 
 		if !excluded || included {
 			cb(&part)
@@ -108,4 +104,8 @@ func hasOpt(needles []string, haystackList string) bool {
 
 func matchesPath(re *regexp.Regexp, mountpoint string) bool {
 	return re != nil && re.Match([]byte(mountpoint))
+}
+
+func directDevice(device string) bool {
+	return strings.Contains(device, "/") || strings.Contains(device, ":")
 }
