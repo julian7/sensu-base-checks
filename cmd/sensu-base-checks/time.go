@@ -105,7 +105,7 @@ func (conf *timeConfig) Run(cmd *cobra.Command, args []string) error {
 }
 
 func (conf *timeConfig) print(drift time.Duration) {
-	metrics.New("time").Log("ntp.offset", drift.Microseconds())
+	metrics.New("time").With(map[string]string{"server": conf.Server}).Log("ntp.offset", drift.Microseconds())
 }
 
 func abs(n time.Duration) time.Duration {
