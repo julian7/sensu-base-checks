@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+No changes so far.
+
+## [v0.2.2] - Feb 10. 2020
+
 Fixed:
 
 * filesystem: fix crash when showing zero bytes
@@ -89,6 +93,7 @@ Added:
 * http check
 
 [Unreleased]: https://github.com/julian7/sensu-base-checks
+[v0.2.2]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.2.2
 [v0.2.1]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.2.1
 [v0.2.0]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.2.0
 [v0.1.4]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.1.4
