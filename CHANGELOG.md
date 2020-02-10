@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No changes so far.
+Fixed:
+
+* filesystem: fix crash when showing zero bytes
 
 ## [v0.2.1] - Jan 26, 2020
 
