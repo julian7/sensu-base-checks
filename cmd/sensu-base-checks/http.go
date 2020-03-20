@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
@@ -167,10 +168,7 @@ func (conf *httpConfig) Run(cmd *cobra.Command, args []string) error {
 	defer resp.Body.Close()
 
 	if conf.Metrics {
-		conf.tracer.Done()
-		conf.printMetrics(req, resp)
-
-		return nil
+		return conf.printMetrics(req, resp)
 	}
 
 	if len(conf.Expiry) != 0 {
@@ -332,8 +330,13 @@ func (conf *httpConfig) checkJSONKey(body []byte) (interface{}, error) {
 	return raw, nil
 }
 
-func (conf *httpConfig) printMetrics(req *http.Request, resp *http.Response) {
+func (conf *httpConfig) printMetrics(req *http.Request, resp *http.Response) error {
+	written, err := io.Copy(ioutil.Discard, resp.Body)
+
+	conf.tracer.Done()
+
 	log := metrics.New("http").With(map[string]string{"url": conf.URL})
+	transfer_time := conf.tracer.Finished.Sub(conf.tracer.StartResponding)
 
 	log.Log("time.total", conf.tracer.Total().Microseconds())
 	log.Log("time.namelookup", conf.tracer.Namelookup().Microseconds())
@@ -344,5 +347,14 @@ func (conf *httpConfig) printMetrics(req *http.Request, resp *http.Response) {
 	}
 
 	log.Log("time.starttransfer", conf.tracer.Starttransfer().Microseconds())
+	log.Log("time.body_transfer", transfer_time.Microseconds())
 	log.Log("http.http_code", resp.StatusCode)
+	log.Log("http.body_bytes", written)
+	log.Log("http.error", err)
+
+	if err == nil && transfer_time > 0 && written > 0 {
+		log.Log("speed.body_transfer", float64(written)/transfer_time.Seconds())
+	}
+
+	return nil
 }

@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No changes so far.
+Added:
+
+* http: new measurements: body size, body transfer speed, body transfer errors
 
 ## [v0.2.2] - Feb 10. 2020
 

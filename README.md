@@ -123,7 +123,11 @@ When `--metrics` is provided, it shows the following measurements:
 - http.time.connect: time to connect (from start; in microseconds)
 - http.time.pretransfer: time to TLS handshake (from start; in microseconds)
 - http.time.starttransfer: time to first byte arrived (from start; in microseconds)
+- http.time.body_transfer: time from first byte to finish (in microseconds)
 - http.http.http_code: returned status code
+- http.body_bytes: number of received bytes in HTTP body
+- http.http.error: received error while reading HTTP body (`<nil>` if no error received)
+- http.speed.body_transfer: body transfer speed (in bytes/s; only if no errors, and non-zero body_transfer and body_bytes values)
 
 Provided tags:
 
