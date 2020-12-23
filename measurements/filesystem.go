@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/julian7/sensulib"
-	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/spf13/pflag"
 )
 
@@ -81,12 +81,11 @@ func includes(needle string, haystack []string) bool {
 	return false
 }
 
-func hasOpt(needles []string, haystackList string) bool {
+func hasOpt(needles []string, haystack []string) bool {
 	if len(needles) == 0 {
 		return false
 	}
 
-	haystack := strings.Split(haystackList, ",")
 	if len(haystack) == 0 {
 		return false
 	}

@@ -9,7 +9,7 @@ import (
 	"github.com/julian7/sensu-base-checks/measurements"
 	"github.com/julian7/sensu-base-checks/metrics"
 	"github.com/julian7/sensulib"
-	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/spf13/cobra"
 )
 
