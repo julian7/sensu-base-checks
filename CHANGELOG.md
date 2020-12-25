@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No changes so far.
+Fixed:
+
+* Try all available NTP servers until one answers. It can fix intermittent NTP issues querying only one server.
 
 ## [v0.3.1] - Dec 23, 2020
 

@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"net"
 	"time"
 
 	"github.com/beevik/ntp"
@@ -75,9 +76,22 @@ func (conf *timeConfig) Run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	resp, err := ntp.Query(conf.Server)
+	addrs, err := net.LookupIP(conf.Server)
 	if err != nil {
 		return sensulib.Warn(err)
+	}
+
+	var resp *ntp.Response
+
+	for _, addr := range addrs {
+		resp, err = ntp.QueryWithOptions(addr.String(), ntp.QueryOptions{Timeout: 2 * time.Second})
+		if err == nil {
+			break
+		}
+	}
+
+	if err != nil {
+		return sensulib.Warn(fmt.Errorf("no available NTP servers (last error: %v)", err))
 	}
 
 	if err := resp.Validate(); err != nil {
