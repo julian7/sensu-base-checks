@@ -23,25 +23,25 @@ import (
 )
 
 type httpConfig struct {
-	URL        string
-	Timeout    string
-	timeout    time.Duration
-	Headers    []string
-	Insecure   bool
-	Certfile   string
-	CAfile     string
-	Expiry     string
-	expiry     time.Time
-	Method     string
-	Metrics    bool
-	Response   uint
-	Redirect   string
-	UserAgent  string
-	Data       string
-	JSONkey    string
-	JSONval    string
-	certExpiry time.Time
-	tracer     *measurements.HTTPTracer
+	URL       string
+	Timeout   string
+	timeout   time.Duration
+	Headers   []string
+	Insecure  bool
+	Certfile  string
+	CAfile    string
+	Expiry    string
+	expiry    time.Time
+	Method    string
+	Metrics   bool
+	Response  uint
+	Redirect  string
+	UserAgent string
+	Data      string
+	JSONkey   string
+	JSONval   string
+	certList  []*x509.Certificate
+	tracer    *measurements.HTTPTracer
 }
 
 func httpCmd() *cobra.Command {
@@ -172,11 +172,14 @@ func (conf *httpConfig) Run(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(conf.Expiry) != 0 {
-		if conf.certExpiry.Before(conf.expiry) {
-			return sensulib.Warn(fmt.Errorf(
-				"certificate will expire in %s",
-				durafmt.Parse(time.Until(conf.certExpiry)).LimitFirstN(4).String(),
-			))
+		for _, cert := range conf.certList {
+			if cert.NotAfter.Before(conf.expiry) {
+				return sensulib.Warn(fmt.Errorf(
+					"certificate %s will expire in %s",
+					cert.Subject,
+					durafmt.Parse(time.Until(cert.NotAfter)).LimitFirstN(4).String(),
+				))
+			}
 		}
 	}
 
@@ -208,8 +211,13 @@ func (conf *httpConfig) httpClient() (*http.Client, error) {
 	}
 
 	if len(conf.Expiry) != 0 {
-		tlsconfig.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
-			conf.certExpiry = verifiedChains[0][0].NotAfter
+		tlsconfig.VerifyConnection = func(cs tls.ConnectionState) error {
+			conf.certList = make([]*x509.Certificate, len(cs.PeerCertificates))
+
+			for idx, cert := range cs.PeerCertificates {
+				conf.certList[idx] = cert
+			}
+
 			return nil
 		}
 	}

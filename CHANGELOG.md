@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 Fixed:
 
 * Try all available NTP servers until one answers. It can fix intermittent NTP issues querying only one server.
+* Deep certificate expiration check
+* Allow certificate expiration to be checked while skipping cert verification [#2]
 
 ## [v0.3.1] - Dec 23, 2020
 
