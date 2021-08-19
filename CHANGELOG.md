@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+No changes so far.
+
+## [v0.4.0] - Aug 19, 2021
+
 Fixed:
 
 * Try all available NTP servers until one answers. It can fix intermittent NTP issues querying only one server.
@@ -113,6 +117,7 @@ Added:
 * http check
 
 [Unreleased]: https://github.com/julian7/sensu-base-checks
+[v0.4.0]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.4.0
 [v0.3.1]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.3.1
 [v0.3.0]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.3.0
 [v0.2.2]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.2.2
