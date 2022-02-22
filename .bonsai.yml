@@ -8,7 +8,20 @@ builds:
   filter:
   -  "entity.system.os == 'linux'"
   -  "entity.system.arch == 'amd64'"
-
+- platform: "linux"
+  arch: "arm64"
+  asset_filename: "#{repo}-#{version}-linux-arm64.tar.gz"
+  sha_filename: "#{repo}-#{version}-SHA512SUMS"
+  filter:
+  -  "entity.system.os == 'linux'"
+  -  "entity.system.arch == 'arm64'"
+- platform: "linux"
+  arch: "armv7"
+  asset_filename: "#{repo}-#{version}-linux-armv7.tar.gz"
+  sha_filename: "#{repo}-#{version}-SHA512SUMS"
+  filter:
+  -  "entity.system.os == 'linux'"
+  -  "entity.system.arch == 'armv7'"
 - platform: "Windows"
   arch: "amd64"
   asset_filename: "#{repo}-#{version}-windows-amd64.tar.gz"

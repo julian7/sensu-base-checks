@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+Added:
+
+- ARMv7 and ARM64 Linux support (#4)
+
 Changed:
 
 * Updated dependencies, update go to 1.17
