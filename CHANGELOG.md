@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+No changes so far.
+
+## [v0.5.0] - Feb 2, 2022
+
 Added:
 
 - ARMv7 and ARM64 Linux support (#4)
@@ -123,6 +127,7 @@ Added:
 * http check
 
 [Unreleased]: https://github.com/julian7/sensu-base-checks
+[v0.5.0]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.5.0
 [v0.4.0]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.4.0
 [v0.3.1]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.3.1
 [v0.3.0]: https://github.com/julian7/sensu-base-checks/releases/tag/v0.3.0
