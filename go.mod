@@ -7,8 +7,8 @@ require (
 	github.com/go-test/deep v1.0.8
 	github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b
 	github.com/jmespath/go-jmespath v0.4.0
-	github.com/julian7/goshipdone v0.5.0
-	github.com/julian7/sensulib v0.3.0
+	github.com/julian7/goshipdone v0.6.0
+	github.com/julian7/sensulib v0.4.1
 	github.com/karrick/tparse v2.4.2+incompatible
 	github.com/magefile/mage v1.12.1
 	github.com/shirou/gopsutil/v3 v3.22.1
@@ -33,11 +33,11 @@ require (
 	github.com/xanzy/go-gitlab v0.55.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292 // indirect
-	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
-	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
-	golang.org/x/sys v0.0.0-20220222200937-f2425489ef4c // indirect
+	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
+	golang.org/x/oauth2 v0.0.0-20220223155221-ee480838109b // indirect
+	golang.org/x/sys v0.0.0-20220224120231-95c6836cb0e7 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
+	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
