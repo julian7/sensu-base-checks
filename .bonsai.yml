@@ -21,7 +21,8 @@ builds:
   sha_filename: "#{repo}-#{version}-SHA512SUMS"
   filter:
   -  "entity.system.os == 'linux'"
-  -  "entity.system.arch == 'armv7'"
+  -  "entity.system.arch == 'arm'"
+  -  "entity.system.arm_version == 7"
 - platform: "Windows"
   arch: "amd64"
   asset_filename: "#{repo}-#{version}-windows-amd64.tar.gz"

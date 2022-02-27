@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 Changed:
 
 * Updated `goshipdone` and `sensulibs` to provide accurate Sensu Asset files for ARM
+* Updated Bonsai config to filter ARM v7 properly
 * Removed UPX: uncompressing causes higher CPU / memory footprint than necessary. Storage is cheaper than CPU and memory.
 
 ## [v0.5.0] - Feb 2, 2022
