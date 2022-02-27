@@ -21,9 +21,6 @@ builds:
   - go mod tidy
 - type: changelog
   id: changelog
-- type: upx
-  builds:
-  - build
 - type: tar
   builds:
   - build

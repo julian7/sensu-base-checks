@@ -7,13 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No changes so far.
+Changed:
+
+* Removed UPX: uncompressing causes higher CPU / memory footprint than necessary. Storage is cheaper than CPU and memory.
 
 ## [v0.5.0] - Feb 2, 2022
 
 Added:
 
-- ARMv7 and ARM64 Linux support (#4)
+* ARMv7 and ARM64 Linux support (#4)
 
 Changed:
 
